@@ -1,0 +1,9 @@
+services:
+  client-dev:
+    container_name: client-dev
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8443
+    restart: unless-stopped
