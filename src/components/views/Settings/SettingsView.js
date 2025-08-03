@@ -737,6 +737,8 @@ const SettingsView = ({ showSuccessBanner }) => {
                                     <label htmlFor="pincode" className="block text-sm font-medium text-gray-700">PIN Code</label>
                                     <input
                                         type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                         id="pincode"
                                         className="input-field mt-1"
                                         value={settings.general?.pincode || ''}
@@ -873,6 +875,7 @@ const SettingsView = ({ showSuccessBanner }) => {
                                         <input
                                             type="number"
                                             step="0.01"
+                                            inputMode="numeric"
                                             value={tempPrices[fuel.id] !== undefined ? tempPrices[fuel.id] : (parseFloat(fuel.current_price || fuel.price) || 0).toFixed(2)}
                                             className="input-field mt-1"
                                             onChange={(e) => setTempPrices(prev => ({ ...prev, [fuel.id]: e.target.value }))}
@@ -1123,6 +1126,7 @@ const AddFuelForm = ({ onAdd }) => {
                 />
                 <input
                     type="number"
+                    inputMode="numeric"
                     className="input-field"
                     placeholder="Price"
                     value={price}
@@ -1130,6 +1134,7 @@ const AddFuelForm = ({ onAdd }) => {
                 />
                 <input
                     type="number"
+                    inputMode="numeric"
                     className="input-field"
                     placeholder="Nozzles"
                     value={nozzles}
@@ -1322,6 +1327,7 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
                                 <input
                                     type="number"
                                     step="0.01"
+                                    inputMode="numeric"
                                     className="input-field"
                                     value={creditSaleData.amount}
                                     onChange={(e) => setCreditSaleData(prev => ({ ...prev, amount: e.target.value }))}
@@ -1397,6 +1403,7 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
                                 <input
                                     type="number"
                                     step="0.01"
+                                    inputMode="numeric"
                                     className="input-field"
                                     value={creditCollectionData.amount}
                                     onChange={(e) => setCreditCollectionData(prev => ({ ...prev, amount: e.target.value }))}
@@ -1473,6 +1480,7 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
                                 <input
                                     type="number"
                                     step="0.01"
+                                    inputMode="numeric"
                                     className="input-field"
                                     value={expenseData.amount}
                                     onChange={(e) => setExpenseData(prev => ({ ...prev, amount: e.target.value }))}

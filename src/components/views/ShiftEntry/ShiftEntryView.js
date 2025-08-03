@@ -711,6 +711,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                             <input 
                                                                 type="number" 
                                                                 step="0.01" 
+                                                                inputMode="numeric"
                                                                 className={getInputClassName('input-field', openingValid && !validationErrors[`fuel_${entry.id}_opening_${index}`])}
                                                                 placeholder="Opening"
                                                                 value={opening}
@@ -719,6 +720,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                             <input 
                                                                 type="number" 
                                                                 step="0.01" 
+                                                                inputMode="numeric"
                                                                 className={getInputClassName('input-field', closingValid && !validationErrors[`fuel_${entry.id}_closing_${index}`])}
                                                                 placeholder="Closing"
                                                                 value={entry.closingReadings[index]}
@@ -734,6 +736,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                     <input 
                                                         type="number" 
                                                         step="0.01" 
+                                                        inputMode="numeric"
                                                         value={entry.testingLitres} 
                                                         className={getInputClassName('input-field', 
                                                             isValidNonNegativeNumber(entry.testingLitres) && !validationErrors[`fuel_${entry.id}_testing`])}
@@ -773,6 +776,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                 <label className="text-sm text-gray-600">Paytm (₹)</label>
                                                 <input 
                                                     type="number" 
+                                                    inputMode="numeric"
                                                     value={entry.digitalPayments.paytm} 
                                                     className={getInputClassName('input-field', 
                                                         isValidNonNegativeNumber(entry.digitalPayments.paytm) && !validationErrors[`fuel_${entry.id}_paytm`])}
@@ -783,6 +787,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                 <label className="text-sm text-gray-600">PhonePe (₹)</label>
                                                 <input 
                                                     type="number" 
+                                                    inputMode="numeric"
                                                     value={entry.digitalPayments.phonepe} 
                                                     className={getInputClassName('input-field', 
                                                         isValidNonNegativeNumber(entry.digitalPayments.phonepe) && !validationErrors[`fuel_${entry.id}_phonepe`])}
@@ -793,6 +798,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                 <label className="text-sm text-gray-600">DTPlus/Other (₹)</label>
                                                 <input 
                                                     type="number" 
+                                                    inputMode="numeric"
                                                     value={entry.digitalPayments.other} 
                                                     className={getInputClassName('input-field', 
                                                         isValidNonNegativeNumber(entry.digitalPayments.other) && !validationErrors[`fuel_${entry.id}_other`])}
@@ -841,6 +847,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                         <div className="col-span-8 md:col-span-3">
                                             <input 
                                                 type="number" 
+                                                inputMode="numeric"
                                                 className={getInputClassName('input-field', 
                                                     isValidNonNegativeNumber(sale.amount) && !validationErrors[`credit_${sale.id}_amount`])}
                                                 placeholder="₹ Amount"
@@ -911,6 +918,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                         <div className="col-span-8 md:col-span-3">
                                             <input 
                                                 type="number" 
+                                                inputMode="numeric"
                                                 className={getInputClassName('input-field', 
                                                     isValidNonNegativeNumber(collection.amount) && !validationErrors[`cash_${collection.id}_amount`])}
                                                 placeholder="₹ Amount"
@@ -981,6 +989,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                         <div className="col-span-8 md:col-span-3">
                                             <input 
                                                 type="number" 
+                                                inputMode="numeric"
                                                 className={getInputClassName('input-field', 
                                                     isValidNonNegativeNumber(expense.amount) && !validationErrors[`expense_${expense.id}_amount`])}
                                                 placeholder="₹ Amount"
@@ -1055,6 +1064,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                     <input 
                                         type="number" 
                                         step="0.01"
+                                        inputMode="numeric"
                                         className="input-field w-full" 
                                         placeholder="Enter actual cash amount"
                                         value={shiftData.actualCash}
