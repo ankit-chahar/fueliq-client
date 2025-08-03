@@ -156,14 +156,6 @@ const LoginPage = () => {
                             )}
                         </button>
                     </div>
-
-                    <div className="text-center">
-                        <div className="text-sm text-gray-600 bg-gray-100 rounded-md p-3">
-                            <strong>Demo Credentials:</strong><br />
-                            Username: <code className="bg-white px-1 rounded">admin</code><br />
-                            Password: <code className="bg-white px-1 rounded">admin123</code>
-                        </div>
-                    </div>
                 </form>
             </div>
         </div>
