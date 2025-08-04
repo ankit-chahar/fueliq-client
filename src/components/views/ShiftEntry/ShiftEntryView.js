@@ -20,6 +20,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [validationErrors, setValidationErrors] = useState({});
     const [creditors, setCreditors] = useState([]);
+    const [expensePayees, setExpensePayees] = useState([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     
     // Settings data that this component needs
@@ -58,6 +59,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     useEffect(() => {
         fetchSettings();
         fetchCreditors();
+        fetchExpensePayees();
     }, []);
 
     // Initialize fuel entries based on settings
@@ -125,6 +127,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     // Fetch creditors on component mount
     useEffect(() => {
         fetchCreditors();
+        fetchExpensePayees();
     }, []);
 
     // Fetch creditors list
@@ -136,6 +139,23 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
         } catch (error) {
             console.error('Error fetching creditors:', error);
             setCreditors([]);
+        }
+    };
+
+    // Fetch unique expense payees
+    const fetchExpensePayees = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/dashboard/expense-payees`);
+            console.log('Expense payees API response:', response.data);
+            // Transform the data to match the SearchableCreditorInput expected format
+            const payees = (response.data.data?.payees || []).map(payee => ({
+                name: payee.payee || payee.name,
+                totalAmount: payee.totalAmount || 0
+            }));
+            setExpensePayees(payees);
+        } catch (error) {
+            console.error('Error fetching expense payees:', error);
+            setExpensePayees([]);
         }
     };
 
@@ -570,6 +590,9 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
 
             // Refresh creditors list to include any new creditors from cash collections
             fetchCreditors();
+            
+            // Refresh expense payees list to include any new payees from expenses
+            fetchExpensePayees();
 
             // Reset form for new shift
             setShiftData({
@@ -821,12 +844,12 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                 <div key={sale.id} className="border border-gray-200 rounded-lg p-3 space-y-3">
                                     <div className="grid grid-cols-12 gap-2 items-center">
                                         <div className="col-span-12 md:col-span-4">
-                                            <input 
-                                                type="text" 
-                                                className="input-field" 
-                                                placeholder="Party Name"
+                                            <SearchableCreditorInput
                                                 value={sale.partyName}
-                                                onChange={(e) => updateDynamicEntry('credit', sale.id, 'partyName', e.target.value)}
+                                                onChange={(value) => updateDynamicEntry('credit', sale.id, 'partyName', value)}
+                                                creditors={creditors}
+                                                placeholder="Type to search creditors or enter new name..."
+                                                className="input-field bg-white"
                                             />
                                         </div>
                                         <div className="col-span-12 md:col-span-3">
@@ -963,12 +986,12 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                 <div key={expense.id} className="border border-gray-200 rounded-lg p-3 space-y-3">
                                     <div className="grid grid-cols-12 gap-2 items-center">
                                         <div className="col-span-12 md:col-span-4">
-                                            <input 
-                                                type="text" 
-                                                className="input-field" 
-                                                placeholder="Payee"
+                                            <SearchableCreditorInput
                                                 value={expense.partyName}
-                                                onChange={(e) => updateDynamicEntry('expense', expense.id, 'partyName', e.target.value)}
+                                                onChange={(value) => updateDynamicEntry('expense', expense.id, 'partyName', value)}
+                                                creditors={expensePayees}
+                                                placeholder="Type to search payees or enter new name..."
+                                                className="input-field bg-white"
                                             />
                                         </div>
                                         <div className="col-span-12 md:col-span-3">
