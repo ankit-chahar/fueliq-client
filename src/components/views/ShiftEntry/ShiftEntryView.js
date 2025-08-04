@@ -734,7 +734,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                             <input 
                                                                 type="number" 
                                                                 step="0.01" 
-                                                                inputMode="numeric"
+                                                                inputMode="decimal"
                                                                 className={getInputClassName('input-field', openingValid && !validationErrors[`fuel_${entry.id}_opening_${index}`])}
                                                                 placeholder="Opening"
                                                                 value={opening}
@@ -743,7 +743,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                             <input 
                                                                 type="number" 
                                                                 step="0.01" 
-                                                                inputMode="numeric"
+                                                                inputMode="decimal"
                                                                 className={getInputClassName('input-field', closingValid && !validationErrors[`fuel_${entry.id}_closing_${index}`])}
                                                                 placeholder="Closing"
                                                                 value={entry.closingReadings[index]}
@@ -759,7 +759,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                     <input 
                                                         type="number" 
                                                         step="0.01" 
-                                                        inputMode="numeric"
+                                                        inputMode="decimal"
                                                         value={entry.testingLitres} 
                                                         className={getInputClassName('input-field', 
                                                             isValidNonNegativeNumber(entry.testingLitres) && !validationErrors[`fuel_${entry.id}_testing`])}

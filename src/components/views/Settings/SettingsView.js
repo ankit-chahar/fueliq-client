@@ -875,7 +875,7 @@ const SettingsView = ({ showSuccessBanner }) => {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            inputMode="numeric"
+                                            inputMode="decimal"
                                             value={tempPrices[fuel.id] !== undefined ? tempPrices[fuel.id] : (parseFloat(fuel.current_price || fuel.price) || 0).toFixed(2)}
                                             className="input-field mt-1"
                                             onChange={(e) => setTempPrices(prev => ({ ...prev, [fuel.id]: e.target.value }))}
@@ -1126,7 +1126,7 @@ const AddFuelForm = ({ onAdd }) => {
                 />
                 <input
                     type="number"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     className="input-field"
                     placeholder="Price"
                     value={price}
