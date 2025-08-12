@@ -489,77 +489,21 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
         setError(null);
         
         try {
-            // Mock data for daily report
-            const mockSummary = {
-                totalSales: 125000,
-                totalLitres: 1250,
-                totalCredit: 15000,
-                cashInHand: 110000,
-                shiftsCount: 3
-            };
-
-            const mockFuelBreakdown = {
-                fuelBreakdown: [
-                    { fuelType: 'MS', amount: 75000, volume: 750, avgPrice: 100, amountPercentage: 60, volumePercentage: 60 },
-                    { fuelType: 'HSD', amount: 50000, volume: 500, avgPrice: 100, amountPercentage: 40, volumePercentage: 40 }
-                ]
-            };
-
-            const mockPaymentBreakdown = {
-                cashPayments: 100000,
-                digitalPayments: 25000,
-                breakdown: {
-                    cashFromFuel: 85000,
-                    cashFromCollections: 15000,
-                    digitalFromFuel: 20000,
-                    digitalFromCollections: 5000
-                }
-            };
-
-            const mockExpenseBreakdown = {
-                totalExpenses: 5000,
-                expenseBreakdown: [
-                    { category: 'Fuel Purchase', amount: 3000, transactionCount: 2, percentage: 60 },
-                    { category: 'Maintenance', amount: 2000, transactionCount: 1, percentage: 40 }
-                ]
-            };
-
-            const mockCreditSales = {
-                totalCreditSales: 15000,
-                transactionCount: 3,
-                creditSales: [
-                    { partyName: 'ABC Company', amount: 8000, fuelType: 'MS', shiftType: 'Morning', remarks: 'Regular client' },
-                    { partyName: 'XYZ Motors', amount: 5000, fuelType: 'HSD', shiftType: 'Evening', remarks: '' },
-                    { partyName: 'Local Transport', amount: 2000, fuelType: 'MS', shiftType: 'Night', remarks: 'Emergency' }
-                ]
-            };
-
-            const mockCreditCollections = {
-                totalCreditCollections: 12000,
-                transactionCount: 4,
-                creditCollections: [
-                    { partyName: 'ABC Company', amount: 5000, mode: 'Cash', shiftType: 'Morning', remarks: 'Partial payment' },
-                    { partyName: 'DEF Industries', amount: 3000, mode: 'Bank Transfer', shiftType: 'Morning', remarks: 'Online payment' },
-                    { partyName: 'GHI Transport', amount: 2500, mode: 'Cash', shiftType: 'Evening', remarks: 'Full settlement' },
-                    { partyName: 'JKL Motors', amount: 1500, mode: 'Cheque', shiftType: 'Night', remarks: 'Post-dated cheque' }
-                ]
-            };
-
-            setDashboardData({
-                summary: mockSummary,
-                fuelBreakdown: mockFuelBreakdown,
-                paymentBreakdown: mockPaymentBreakdown,
-                expenseBreakdown: mockExpenseBreakdown,
-                creditSales: mockCreditSales,
-                creditCollections: mockCreditCollections
-            });
+            // Fetch comprehensive daily report data from single API endpoint
+            const response = await axios.get(`${API_URL}/api/dashboard/daily-report/${selectedDate}`);
+            
+            if (response.data.success) {
+                setDashboardData(response.data.data);
+            } else {
+                throw new Error(response.data.message || 'Failed to fetch daily report data');
+            }
         } catch (err) {
             console.error('Error fetching daily report data:', err);
             setError('Failed to load daily report data. Please check your connection.');
         } finally {
             setIsLoading(false);
         }
-    }, []); // Remove selectedDate dependency as we're using mock data
+    }, [selectedDate]); // Add selectedDate dependency back
 
     useEffect(() => {
         fetchDailyReportData();
@@ -668,12 +612,19 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
                         {fuelBreakdown?.fuelBreakdown?.length > 0 ? (
                             fuelBreakdown.fuelBreakdown.map((fuel, index) => (
                                 <div key={index}>
-                                    <p className="text-sm font-medium text-gray-800 mb-2">
-                                        {fuel.fuelType.toUpperCase()} 
-                                        {fuel.avgPrice > 0 && (
-                                            <span className="text-xs text-gray-500 ml-2">@ ₹{fuel.avgPrice}/L</span>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-sm font-medium text-gray-800">
+                                            {fuel.fuelType.toUpperCase()} 
+                                            {fuel.avgPrice > 0 && (
+                                                <span className="text-xs text-gray-500 ml-2">@ ₹{fuel.avgPrice}/L</span>
+                                            )}
+                                        </p>
+                                        {fuel.testingVolume > 0 && (
+                                            <p className="text-xs text-orange-600 font-medium">
+                                                Testing: {fuel.testingVolume} L
+                                            </p>
                                         )}
-                                    </p>
+                                    </div>
                                     <div className="flex justify-between text-xs font-medium text-gray-500 mb-1">
                                         <span>Amount</span>
                                         <span>{formatMoney(fuel.amount)}</span>
