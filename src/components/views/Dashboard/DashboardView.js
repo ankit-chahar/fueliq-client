@@ -477,7 +477,8 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
         fuelBreakdown: null,
         paymentBreakdown: null,
         expenseBreakdown: null,
-        creditSales: null
+        creditSales: null,
+        creditCollections: null
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -533,12 +534,24 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
                 ]
             };
 
+            const mockCreditCollections = {
+                totalCreditCollections: 12000,
+                transactionCount: 4,
+                creditCollections: [
+                    { partyName: 'ABC Company', amount: 5000, mode: 'Cash', shiftType: 'Morning', remarks: 'Partial payment' },
+                    { partyName: 'DEF Industries', amount: 3000, mode: 'Bank Transfer', shiftType: 'Morning', remarks: 'Online payment' },
+                    { partyName: 'GHI Transport', amount: 2500, mode: 'Cash', shiftType: 'Evening', remarks: 'Full settlement' },
+                    { partyName: 'JKL Motors', amount: 1500, mode: 'Cheque', shiftType: 'Night', remarks: 'Post-dated cheque' }
+                ]
+            };
+
             setDashboardData({
                 summary: mockSummary,
                 fuelBreakdown: mockFuelBreakdown,
                 paymentBreakdown: mockPaymentBreakdown,
                 expenseBreakdown: mockExpenseBreakdown,
-                creditSales: mockCreditSales
+                creditSales: mockCreditSales,
+                creditCollections: mockCreditCollections
             });
         } catch (err) {
             console.error('Error fetching daily report data:', err);
@@ -580,7 +593,7 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
         );
     }
 
-    const { summary, fuelBreakdown, paymentBreakdown, expenseBreakdown, creditSales } = dashboardData;
+    const { summary, fuelBreakdown, paymentBreakdown, expenseBreakdown, creditSales, creditCollections } = dashboardData;
 
     return (
         <div>
@@ -635,9 +648,11 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
             </div>
 
             {/* Detailed Widgets Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Sales by Fuel */}
-                <div className="card p-6">
+            <div className="space-y-8">
+                {/* First Row - Sales by Fuel and Payment Mode Summary */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Sales by Fuel */}
+                    <div className="card p-6">
                     <div className="flex items-center mb-4">
                         <h2 className="text-xl font-bold text-gray-700 mr-4">Sales by Fuel</h2>
                         <div className="flex items-center gap-3 text-xs">
@@ -688,7 +703,7 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
                 </div>
 
                 {/* Payment Mode Summary */}
-                <div className="card p-6">
+                <div className="card p-6 xl:col-span-1">
                     <h2 className="text-xl font-bold text-gray-700 mb-4">Payment Mode Summary</h2>
                     {paymentBreakdown ? (
                         <div className="space-y-4">
@@ -729,6 +744,10 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
                         <p className="text-gray-500 text-sm">No payment data for selected date</p>
                     )}
                 </div>
+            </div>
+
+            {/* Second Row - Expense Breakdown, Credit Sales, and Credit Collections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
 
                 {/* Expense Breakdown */}
                 <div className="card p-6">
@@ -791,6 +810,40 @@ const DashboardDailyReportView = ({ selectedDate, formatMoney }) => {
                         <p className="text-gray-500 text-sm">No credit sales for selected date</p>
                     )}
                 </div>
+
+                {/* Today's Credit Collections */}
+                <div className="card p-6">
+                    <h2 className="text-xl font-bold text-gray-700 mb-4">Today's Credit Collections</h2>
+                    {creditCollections?.creditCollections?.length > 0 ? (
+                        <div className="space-y-4">
+                            <div className="text-center mb-4">
+                                <p className="text-2xl font-bold text-green-600">{formatMoney(creditCollections.totalCreditCollections)}</p>
+                                <p className="text-sm text-gray-500">{creditCollections.transactionCount} transaction(s)</p>
+                            </div>
+                            <div className="space-y-3 max-h-64 overflow-y-auto">
+                                {creditCollections.creditCollections.map((collection, index) => (
+                                    <div key={index} className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <span className="font-medium text-gray-800">{collection.partyName}</span>
+                                                <p className="text-xs text-gray-500">
+                                                    {collection.mode} • {collection.shiftType} shift
+                                                </p>
+                                                {collection.remarks && (
+                                                    <p className="text-xs text-gray-600 mt-1">{collection.remarks}</p>
+                                                )}
+                                            </div>
+                                            <span className="font-bold text-green-600">{formatMoney(collection.amount)}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-sm">No credit collections for selected date</p>
+                    )}
+                </div>
+            </div>
             </div>
         </div>
     );
