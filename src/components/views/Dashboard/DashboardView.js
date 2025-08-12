@@ -19,12 +19,7 @@ const DashboardView = () => {
     const renderDashboardView = () => {
         switch (activeDashboardTab) {
             case 'overview':
-                return <DashboardOverviewView 
-                    selectedDate={selectedDate} 
-                    formatMoney={formatMoney} 
-                    formatDate={formatDate} 
-                    onNavigateToTab={setActiveDashboardTab}
-                />;
+                return <DashboardOverviewView formatMoney={formatMoney} formatDate={formatDate} onNavigateToTab={setActiveDashboardTab} />;
             case 'daily-report':
                 return <DashboardDailyReportView selectedDate={selectedDate} formatMoney={formatMoney} />;
             case 'creditors':
@@ -36,9 +31,10 @@ const DashboardView = () => {
 
     return (
         <div className="max-w-7xl mx-auto">
-            {/* Dashboard Header with Date Selector */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+        {/* Dashboard Header with Conditional Date Selector */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+            {activeDashboardTab === 'daily-report' && (
                 <div className="mt-4 md:mt-0 flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-600">Showing data for:</span>
                     <input 
@@ -49,9 +45,8 @@ const DashboardView = () => {
                         onChange={(e) => setSelectedDate(e.target.value)}
                     />
                 </div>
-            </div>
-
-            {/* Dashboard Sub-Navigation */}
+            )}
+        </div>            {/* Dashboard Sub-Navigation */}
             <div className="mb-6 overflow-x-auto pb-2">
                 <div className="flex space-x-2 min-w-max">
                     <button 
@@ -97,7 +92,7 @@ const DashboardView = () => {
 };
 
 // Dashboard Overview Sub-Component
-const DashboardOverviewView = ({ selectedDate, formatMoney, formatDate, onNavigateToTab }) => {
+const DashboardOverviewView = ({ formatMoney, formatDate, onNavigateToTab }) => {
     const [activeChartTab, setActiveChartTab] = useState('amount');
     const [dashboardData, setDashboardData] = useState({
         summary: null,
@@ -106,6 +101,9 @@ const DashboardOverviewView = ({ selectedDate, formatMoney, formatDate, onNaviga
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [salesTrendChart, setSalesTrendChart] = useState(null);
+
+    // Use current date for overview data
+    const currentDate = new Date().toISOString().split('T')[0];
 
     // Initialize Chart.js chart
     const initializeSalesTrendChart = useCallback(() => {
@@ -254,7 +252,7 @@ const DashboardOverviewView = ({ selectedDate, formatMoney, formatDate, onNaviga
             // Fetch real sales trend data from API
             const salesTrendResponse = await axios.get(`${API_URL}/api/dashboard/sales-trend`, {
                 params: {
-                    date: selectedDate,
+                    date: currentDate,
                     numberOfDays: 7
                 }
             });
@@ -262,7 +260,7 @@ const DashboardOverviewView = ({ selectedDate, formatMoney, formatDate, onNaviga
             // Fetch monthly fuel summary data from API
             const monthlyFuelResponse = await axios.get(`${API_URL}/api/dashboard/monthly-fuel-summary`, {
                 params: {
-                    date: selectedDate
+                    date: currentDate
                 }
             });
 
@@ -286,7 +284,7 @@ const DashboardOverviewView = ({ selectedDate, formatMoney, formatDate, onNaviga
         } finally {
             setIsLoading(false);
         }
-    }, [selectedDate]); // Add selectedDate dependency to refetch when date changes
+    }, [currentDate]); // Use currentDate instead of selectedDate
 
     useEffect(() => {
         fetchDashboardData();
