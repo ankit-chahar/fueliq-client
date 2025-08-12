@@ -17,11 +17,17 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [existingShiftId, setExistingShiftId] = useState(null);
+    const [checkingExistingShift, setCheckingExistingShift] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [validationErrors, setValidationErrors] = useState({});
     const [creditors, setCreditors] = useState([]);
     const [expensePayees, setExpensePayees] = useState([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    
+    // Auto-populate previous shift readings state
+    const [previousReadings, setPreviousReadings] = useState(null);
+    const [loadingPreviousReadings, setLoadingPreviousReadings] = useState(false);
+    const [autoPopulatedFields, setAutoPopulatedFields] = useState(new Set());
     
     // Settings data that this component needs
     const [settings, setSettings] = useState({
@@ -106,23 +112,145 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
 
     // Helper functions - must be defined before useEffect hooks that use them
     const checkExistingShift = useCallback(async () => {
+        // Don't check if date or shift type is not set
+        if (!shiftData.shiftDate || !shiftData.shiftType) {
+            setExistingShiftId(null);
+            return;
+        }
+
         try {
+            setCheckingExistingShift(true);
+            console.log('Checking for existing shift:', shiftData.shiftDate, shiftData.shiftType);
+            
             const response = await axios.get(`${API_URL}/api/shifts/check/${shiftData.shiftDate}/${shiftData.shiftType}`);
-            if (response.data.exists) {
-                setExistingShiftId(response.data.shiftId);
+            console.log('Check existing shift response:', response.data);
+            
+            if (response.data.success && response.data.data && response.data.data.exists) {
+                // Backend returns the shift object, extract the id
+                const shiftId = response.data.data.shift?.id || response.data.data.shiftId;
+                console.log('Setting existing shift ID:', shiftId);
+                setExistingShiftId(shiftId);
             } else {
+                console.log('No existing shift found');
                 setExistingShiftId(null);
             }
         } catch (error) {
             console.error('Error checking existing shift:', error);
+            console.log('Error response:', error.response?.data);
             setExistingShiftId(null);
+        } finally {
+            setCheckingExistingShift(false);
         }
     }, [shiftData.shiftDate, shiftData.shiftType]);
+
+    // Helper function to determine previous shift details
+    const getPreviousShiftDetails = (currentDate, currentShiftType) => {
+        const date = new Date(currentDate);
+        
+        if (currentShiftType === 'morning') {
+            // Previous shift is previous day's night shift
+            date.setDate(date.getDate() - 1);
+            return {
+                date: date.toISOString().split('T')[0],
+                type: 'night'
+            };
+        } else {
+            // Previous shift is same day's morning shift
+            return {
+                date: currentDate,
+                type: 'morning'
+            };
+        }
+    };
+
+    // Function to fetch previous shift readings
+    const fetchPreviousShiftReadings = useCallback(async (date, shiftType) => {
+        try {
+            setLoadingPreviousReadings(true);
+            const response = await axios.get(
+                `${API_URL}/api/shifts/previous-readings/${date}/${shiftType}`
+            );
+            
+            if (response.data.success && response.data.data.exists) {
+                setPreviousReadings(response.data.data.readings);
+                return response.data.data.readings;
+            } else {
+                setPreviousReadings(null);
+                return null;
+            }
+        } catch (error) {
+            console.error('Error fetching previous shift readings:', error);
+            setPreviousReadings(null);
+            return null;
+        } finally {
+            setLoadingPreviousReadings(false);
+        }
+    }, []);
+
+    // Function to auto-populate opening readings from previous shift
+    const autoPopulateOpeningReadings = useCallback(async () => {
+        if (!shiftData.shiftDate || !shiftData.shiftType || fuelTypes.length === 0) {
+            return;
+        }
+
+        const readings = await fetchPreviousShiftReadings(shiftData.shiftDate, shiftData.shiftType);
+        
+        if (readings && Object.keys(readings).length > 0) {
+            const newAutoPopulatedFields = new Set();
+            
+            setShiftData(prev => ({
+                ...prev,
+                fuelEntries: prev.fuelEntries.map(entry => {
+                    const fuelReadings = readings[entry.fuelType];
+                    if (fuelReadings) {
+                        const updatedOpeningReadings = [...entry.openingReadings];
+                        
+                        // Auto-populate each nozzle reading
+                        entry.openingReadings.forEach((_, nozzleIndex) => {
+                            const nozzleKey = `nozzle_${nozzleIndex + 1}`;
+                            if (fuelReadings[nozzleKey] !== undefined) {
+                                updatedOpeningReadings[nozzleIndex] = fuelReadings[nozzleKey].toString();
+                                // Mark this field as auto-populated
+                                newAutoPopulatedFields.add(`${entry.id}_opening_${nozzleIndex}`);
+                            }
+                        });
+                        
+                        return { ...entry, openingReadings: updatedOpeningReadings };
+                    }
+                    return entry;
+                })
+            }));
+            
+            setAutoPopulatedFields(newAutoPopulatedFields);
+            
+            // Show success message
+            if (newAutoPopulatedFields.size > 0) {
+                if (showSuccessBanner) {
+                    showSuccessBanner('Opening readings auto-populated from previous shift');
+                }
+            }
+        }
+    }, [shiftData.shiftDate, shiftData.shiftType, fuelTypes, fetchPreviousShiftReadings, showSuccessBanner]);
+
+    // Function to check if a field is auto-populated
+    const isFieldAutoPopulated = (entryId, fieldType, nozzleIndex = null) => {
+        if (fieldType === 'openingReadings' && nozzleIndex !== null) {
+            return autoPopulatedFields.has(`${entryId}_opening_${nozzleIndex}`);
+        }
+        return false;
+    };
 
     // Check for existing shift when date or type changes
     useEffect(() => {
         checkExistingShift();
     }, [checkExistingShift]);
+
+    // Auto-populate opening readings when date, shift type changes, or fuel entries are initialized
+    useEffect(() => {
+        if (fuelTypes.length > 0 && shiftData.fuelEntries.length > 0) {
+            autoPopulateOpeningReadings();
+        }
+    }, [shiftData.shiftDate, shiftData.shiftType, fuelTypes.length, autoPopulateOpeningReadings]);
 
     // Fetch creditors on component mount
     useEffect(() => {
@@ -202,6 +330,8 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
         const selectedDate = e.target.value;
         if (isValidShiftDate(selectedDate)) {
             setShiftData(prev => ({ ...prev, shiftDate: selectedDate }));
+            // Clear auto-populated fields when date changes
+            setAutoPopulatedFields(new Set());
             // Clear future date error if it exists
             setValidationErrors(prev => {
                 const newErrors = { ...prev };
@@ -215,6 +345,13 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                 futureDate: true
             }));
         }
+    };
+
+    const handleShiftTypeChange = (e) => {
+        const selectedType = e.target.value;
+        setShiftData(prev => ({ ...prev, shiftType: selectedType }));
+        // Clear auto-populated fields when shift type changes
+        setAutoPopulatedFields(new Set());
     };
 
     // Validation utility functions
@@ -301,6 +438,16 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                     if (field === 'openingReadings' || field === 'closingReadings') {
                         const newReadings = [...entry[field]];
                         newReadings[index] = value;
+                        
+                        // If user manually edits an auto-populated field, remove it from auto-populated set
+                        if (field === 'openingReadings' && isFieldAutoPopulated(id, field, index)) {
+                            setAutoPopulatedFields(prev => {
+                                const newSet = new Set(prev);
+                                newSet.delete(`${id}_opening_${index}`);
+                                return newSet;
+                            });
+                        }
+                        
                         return { ...entry, [field]: newReadings };
                     } else if (field.startsWith('digitalPayments.')) {
                         const paymentType = field.split('.')[1];
@@ -379,6 +526,12 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
         if (!isValidShiftDate(shiftData.shiftDate)) {
             errors.push('Cannot create shift for future dates');
             newValidationErrors.futureDate = true;
+        }
+
+        // Check for existing shift - prevent duplicate submission without explicit confirmation
+        if (existingShiftId) {
+            errors.push(`A shift already exists for ${shiftData.shiftDate} (${shiftData.shiftType}). Please use a different date/shift or confirm overwrite.`);
+            newValidationErrors.duplicateShift = true;
         }
 
         // Check if fuel entries have valid readings
@@ -463,7 +616,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     const handleSubmitClick = () => {
         if (isSubmitting) return;
 
-        // Validate data first
+        // Normal flow for all shifts
         const validationErrors = validateShiftData();
         if (validationErrors.length > 0) {
             alert('Please fix the following errors:\n\n' + validationErrors.join('\n'));
@@ -485,14 +638,6 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
 
     const submitShift = async () => {
         if (isSubmitting) return;
-
-        if (existingShiftId) {
-            const confirmOverwrite = window.confirm(
-                `A shift already exists for ${shiftData.shiftDate} (${shiftData.shiftType}). ` +
-                'This will overwrite the existing data. Are you sure you want to continue?'
-            );
-            if (!confirmOverwrite) return;
-        }
 
         setIsSubmitting(true);
 
@@ -657,23 +802,40 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                             id="shift-select" 
                             className="input-field mt-1 max-w-xs bg-white"
                             value={shiftData.shiftType}
-                            onChange={(e) => setShiftData(prev => ({ ...prev, shiftType: e.target.value }))}
+                            onChange={handleShiftTypeChange}
                         >
                             <option value="morning">Morning (6AM - 6PM)</option>
                             <option value="night">Night (6PM - 6AM)</option>
                         </select>
                     </div>
                 </div>
+                
+                {/* Checking for existing shift indicator */}
+                {checkingExistingShift && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-300 rounded-md">
+                        <div className="flex items-center">
+                            <i className="fas fa-spinner fa-spin text-blue-600 mr-2"></i>
+                            <span className="text-sm text-blue-700">Checking for existing shift...</span>
+                        </div>
+                    </div>
+                )}
+                
+                {/* Existing shift warning banner */}
                 {existingShiftId && (
-                    <div className="mt-4 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
-                        <div className="flex">
-                            <i className="fas fa-exclamation-triangle text-yellow-600 mr-2 mt-0.5"></i>
-                            <div>
-                                <p className="text-sm font-medium text-yellow-800">Shift Already Exists</p>
-                                <p className="text-sm text-yellow-700 mt-1">
-                                    A shift for {shiftData.shiftDate} ({shiftData.shiftType}) already exists (ID: {existingShiftId}). 
-                                    Submitting will overwrite the existing data.
-                                </p>
+                    <div className="mt-4 p-4 bg-red-100 border-2 border-red-500 rounded-lg shadow-lg">
+                        <div className="flex items-start">
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-red-800 mb-2 flex items-center">
+                                    ⚠️ SHIFT ALREADY EXISTS
+                                </h3>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-red-700">
+                                        📅 Date: <span className="font-bold">{shiftData.shiftDate}</span>
+                                    </p>
+                                    <p className="text-sm font-medium text-red-700">
+                                        🕐 Shift: <span className="font-bold">{shiftData.shiftType.toUpperCase()}</span>
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -686,16 +848,31 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                     <div className="card p-4">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-bold text-gray-700">Fuel Sales (MS & HSD)</h2>
-                            {fuelTypes.length > 0 && shiftData.fuelEntries.length > 0 && (
-                                <button 
-                                    onClick={refreshFuelPrices}
-                                    className="btn btn-secondary text-sm px-3 py-1"
-                                    title="Refresh fuel prices from database"
-                                >
-                                    <i className="fas fa-sync-alt mr-1"></i>
-                                    Refresh Prices
-                                </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {/* Auto-populate controls */}
+                                {autoPopulatedFields.size > 0 && (
+                                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded flex items-center">
+                                        <i className="fas fa-magic mr-1"></i>
+                                        {autoPopulatedFields.size} auto-filled
+                                    </span>
+                                )}
+                                {loadingPreviousReadings && (
+                                    <span className="text-xs text-gray-500 flex items-center">
+                                        <i className="fas fa-spinner fa-spin mr-1"></i>
+                                        Loading previous readings...
+                                    </span>
+                                )}
+                                {fuelTypes.length > 0 && shiftData.fuelEntries.length > 0 && (
+                                    <button 
+                                        onClick={refreshFuelPrices}
+                                        className="btn btn-secondary text-sm px-3 py-1"
+                                        title="Refresh fuel prices from database"
+                                    >
+                                        <i className="fas fa-sync-alt mr-1"></i>
+                                        Refresh Prices
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         {fuelTypes.length === 0 ? (
                             <div className="text-center py-8 text-gray-500">
@@ -728,18 +905,39 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                     const openingValid = isValidNonNegativeNumber(opening);
                                                     const closingValid = isValidNonNegativeNumber(entry.closingReadings[index]) && 
                                                                          isClosingGreaterThanOpening(opening, entry.closingReadings[index]);
+                                                    const isOpeningAutoPopulated = isFieldAutoPopulated(entry.id, 'openingReadings', index);
+                                                    
                                                     return (
                                                         <div key={index} className="grid grid-cols-2 gap-x-3 gap-y-1">
-                                                            <label className="text-sm text-gray-600 col-span-2">Nozzle {index + 1}</label>
-                                                            <input 
-                                                                type="number" 
-                                                                step="0.01" 
-                                                                inputMode="decimal"
-                                                                className={getInputClassName('input-field', openingValid && !validationErrors[`fuel_${entry.id}_opening_${index}`])}
-                                                                placeholder="Opening"
-                                                                value={opening}
-                                                                onChange={(e) => updateFuelEntry(entry.id, 'openingReadings', e.target.value, index)}
-                                                            />
+                                                            <label className="text-sm text-gray-600 col-span-2 flex items-center gap-2">
+                                                                Nozzle {index + 1}
+                                                                {isOpeningAutoPopulated && (
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                                        <i className="fas fa-magic mr-1"></i>
+                                                                        Auto-filled
+                                                                    </span>
+                                                                )}
+                                                            </label>
+                                                            <div className="relative">
+                                                                <input 
+                                                                    type="number" 
+                                                                    step="0.01" 
+                                                                    inputMode="decimal"
+                                                                    className={`${getInputClassName('input-field', openingValid && !validationErrors[`fuel_${entry.id}_opening_${index}`])} ${
+                                                                        isOpeningAutoPopulated ? 'bg-blue-50 border-blue-300 text-blue-900 cursor-not-allowed' : ''
+                                                                    }`}
+                                                                    placeholder="Opening"
+                                                                    value={opening}
+                                                                    disabled={isOpeningAutoPopulated}
+                                                                    readOnly={isOpeningAutoPopulated}
+                                                                    onChange={(e) => updateFuelEntry(entry.id, 'openingReadings', e.target.value, index)}
+                                                                />
+                                                                {isOpeningAutoPopulated && (
+                                                                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                                                        <i className="fas fa-lock text-blue-500 text-xs"></i>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                             <input 
                                                                 type="number" 
                                                                 step="0.01" 
