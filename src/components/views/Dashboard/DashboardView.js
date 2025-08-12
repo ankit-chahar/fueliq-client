@@ -805,6 +805,8 @@ const DashboardCreditorsView = ({ formatMoney }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [loadingTransactions, setLoadingTransactions] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filteredCreditors, setFilteredCreditors] = useState([]);
 
     // Fetch detailed creditors data from API
     const fetchCreditorsData = useCallback(async () => {
@@ -816,6 +818,8 @@ const DashboardCreditorsView = ({ formatMoney }) => {
             
             if (response.data.success) {
                 setCreditorsData(response.data.data);
+                // Initialize filtered creditors with all creditors
+                setFilteredCreditors(response.data.data.creditors || []);
             } else {
                 throw new Error(response.data.message || 'Failed to fetch creditors data');
             }
@@ -856,6 +860,24 @@ const DashboardCreditorsView = ({ formatMoney }) => {
         fetchCreditorsData();
     }, [fetchCreditorsData]);
 
+    // Filter creditors based on search query
+    useEffect(() => {
+        if (creditorsData?.creditors) {
+            if (searchQuery.trim() === '') {
+                setFilteredCreditors(creditorsData.creditors);
+            } else {
+                const filtered = creditorsData.creditors.filter(creditor => {
+                    // Split the name into words and check if any word starts with the search query
+                    const nameWords = creditor.name.toLowerCase().split(' ');
+                    return nameWords.some(word => 
+                        word.startsWith(searchQuery.toLowerCase())
+                    );
+                });
+                setFilteredCreditors(filtered);
+            }
+        }
+    }, [creditorsData, searchQuery]);
+
     if (isLoading) {
         return (
             <div className="p-6 card text-center">
@@ -887,7 +909,7 @@ const DashboardCreditorsView = ({ formatMoney }) => {
     return (
         <div>
             {/* High-Level Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className={`grid grid-cols-1 md:grid-cols-${searchQuery ? '3' : '2'} gap-6 mb-8`}>
                 <div className="card p-6 text-center">
                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mx-auto mb-4">
                         <i className="fas fa-exclamation-triangle text-2xl text-red-600"></i>
@@ -900,15 +922,63 @@ const DashboardCreditorsView = ({ formatMoney }) => {
                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mx-auto mb-4">
                         <i className="fas fa-users text-2xl text-blue-600"></i>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-700">Active Creditors</h3>
-                    <p className="text-3xl font-bold text-blue-600 mt-2">{creditorsData?.creditorsCount || 0}</p>
+                    <h3 className="text-lg font-semibold text-gray-700">
+                        {searchQuery ? 'Filtered' : 'Active'} Creditors
+                    </h3>
+                    <p className="text-3xl font-bold text-blue-600 mt-2">
+                        {searchQuery ? filteredCreditors.length : (creditorsData?.creditorsCount || 0)}
+                    </p>
                 </div>
+
+                {searchQuery && (
+                    <div className="card p-6 text-center">
+                        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mx-auto mb-4">
+                            <i className="fas fa-filter text-2xl text-green-600"></i>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-700">Filtered Outstanding</h3>
+                        <p className="text-3xl font-bold text-green-600 mt-2">
+                            {formatMoney(filteredCreditors.reduce((sum, creditor) => sum + creditor.totalAmount, 0))}
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Detailed Creditor Table */}
             <div className="card p-6">
-                <h2 className="text-xl font-bold text-gray-700 mb-6">Creditor Details</h2>
-                {creditorsData?.creditors?.length > 0 ? (
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-700">Creditor Details</h2>
+                </div>
+
+                {/* Search Bar */}
+                <div className="mb-6">
+                    <div className="relative max-w-md">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                            <i className="fas fa-search text-gray-400 text-sm"></i>
+                        </div>
+                        <input
+                            type="text"
+                            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Search creditors by name..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center z-10 hover:bg-gray-50 rounded-r-md"
+                                type="button"
+                            >
+                                <i className="fas fa-times text-gray-400 hover:text-gray-600 text-sm"></i>
+                            </button>
+                        )}
+                    </div>
+                    {searchQuery && (
+                        <p className="text-sm text-gray-600 mt-2">
+                            Showing {filteredCreditors.length} of {creditorsData?.creditors?.length || 0} creditors
+                        </p>
+                    )}
+                </div>
+                {filteredCreditors.length > 0 ? (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
@@ -921,7 +991,7 @@ const DashboardCreditorsView = ({ formatMoney }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {creditorsData.creditors.map((creditor, index) => (
+                                {filteredCreditors.map((creditor, index) => (
                                     <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                                         <td className="py-3 px-4">
                                             <div>
@@ -957,6 +1027,20 @@ const DashboardCreditorsView = ({ formatMoney }) => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                ) : searchQuery ? (
+                    <div className="text-center py-8">
+                        <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
+                        <p className="text-lg font-medium text-gray-500">No Creditors Found</p>
+                        <p className="text-sm text-gray-400">
+                            No creditors match your search for "{searchQuery}"
+                        </p>
+                        <button 
+                            onClick={() => setSearchQuery('')}
+                            className="btn btn-secondary mt-4"
+                        >
+                            Clear Search
+                        </button>
                     </div>
                 ) : (
                     <div className="text-center py-8">
