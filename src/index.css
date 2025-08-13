@@ -277,3 +277,49 @@ input[type="number"]::-webkit-inner-spin-button {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* Mobile header improvements */
+@media (max-width: 640px) {
+    /* Ensure header content doesn't overflow on mobile */
+    header {
+        overflow-x: hidden;
+    }
+    
+    /* Improve mobile typography */
+    .font-poppins {
+        letter-spacing: -0.025em;
+    }
+    
+    /* Ensure user menu dropdown fits on small screens */
+    .user-menu-mobile {
+        width: calc(100vw - 2rem);
+        right: 1rem;
+        left: auto;
+        max-width: 280px;
+    }
+    
+    /* Improve touch targets on mobile */
+    button[aria-haspopup="true"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* Very small screens (iPhone SE, etc.) */
+@media (max-width: 375px) {
+    /* Further reduce header padding */
+    header .mx-auto {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    /* Make logo and text even smaller */
+    .mobile-logo {
+        height: 2.5rem;
+        width: 2.5rem;
+    }
+    
+    .mobile-title {
+        font-size: 1rem;
+    }
+}
