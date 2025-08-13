@@ -194,6 +194,9 @@ const SettingsView = ({ showSuccessBanner }) => {
             case 'cash-modes':
                 setOriginalSectionState(JSON.parse(JSON.stringify(settings.cashModes)));
                 break;
+            case 'lube-types':
+                setOriginalSectionState(JSON.parse(JSON.stringify(settings.lubeTypes)));
+                break;
             default:
                 setOriginalSectionState(JSON.parse(JSON.stringify(settings)));
         }
@@ -217,6 +220,9 @@ const SettingsView = ({ showSuccessBanner }) => {
                 break;
             case 'cash-modes':
                 setSettings(prev => ({ ...prev, cashModes: originalSectionState }));
+                break;
+            case 'lube-types':
+                setSettings(prev => ({ ...prev, lubeTypes: originalSectionState }));
                 break;
         }
         setEditingSection(null);
@@ -328,6 +334,38 @@ const SettingsView = ({ showSuccessBanner }) => {
                     changelog.push(`Cash collection mode "${mode}" will be removed.`);
                 });
                 break;
+            case 'lube-types':
+                // Handle both string and object types for lube types
+                const currentLubeTypes = settings.lubeTypes || [];
+                const originalLubeTypes = originalSectionState || [];
+                
+                // Helper function to get comparable value (name for objects, value for strings)
+                const getComparableValue = (item) => typeof item === 'object' ? item.name : item;
+                const getDisplayValue = (item) => typeof item === 'object' ? item.name : item;
+                
+                // Find added lube types
+                const addedLubeTypes = currentLubeTypes.filter(currentType => {
+                    const currentName = getComparableValue(currentType);
+                    return !originalLubeTypes.some(originalType => 
+                        getComparableValue(originalType) === currentName
+                    );
+                });
+                
+                // Find removed lube types  
+                const removedLubeTypes = originalLubeTypes.filter(originalType => {
+                    const originalName = getComparableValue(originalType);
+                    return !currentLubeTypes.some(currentType => 
+                        getComparableValue(currentType) === originalName
+                    );
+                });
+                
+                addedLubeTypes.forEach(type => {
+                    changelog.push(`Lube type "${getDisplayValue(type)}" will be added.`);
+                });
+                removedLubeTypes.forEach(type => {
+                    changelog.push(`Lube type "${getDisplayValue(type)}" will be removed.`);
+                });
+                break;
         }
         
         return changelog;
@@ -347,22 +385,53 @@ const SettingsView = ({ showSuccessBanner }) => {
     };
 
     const addArrayItem = (arrayName, newItem) => {
-        if (newItem.trim() && !settings[arrayName].includes(newItem.trim())) {
-            const itemDisplayName = getArrayItemDisplayName(arrayName);
+        if (newItem.trim()) {
+            const trimmedItem = newItem.trim();
+            const currentArray = settings[arrayName];
             
-            showModal({
-                title: 'Confirm Addition',
-                text: `Are you sure you want to add "${newItem.trim()}" to ${itemDisplayName}?`,
-                confirmText: 'Add',
-                confirmClass: 'btn-primary',
-                onConfirm: () => {
-                    setSettings(prev => ({
-                        ...prev,
-                        [arrayName]: [...prev[arrayName], newItem.trim()]
-                    }));
-                    showSuccessBanner(`"${newItem.trim()}" added to ${itemDisplayName} successfully!`);
-                }
-            });
+            // Check if item already exists
+            let alreadyExists = false;
+            if (arrayName === 'lubeTypes') {
+                // For lubeTypes (objects), check by name
+                alreadyExists = currentArray.some(item => 
+                    (typeof item === 'object' ? item.name : item) === trimmedItem
+                );
+            } else {
+                // For other arrays (strings), use direct comparison
+                alreadyExists = currentArray.includes(trimmedItem);
+            }
+            
+            if (!alreadyExists) {
+                const itemDisplayName = getArrayItemDisplayName(arrayName);
+                
+                showModal({
+                    title: 'Confirm Addition',
+                    text: `Are you sure you want to add "${trimmedItem}" to ${itemDisplayName}?`,
+                    confirmText: 'Add',
+                    confirmClass: 'btn-primary',
+                    onConfirm: () => {
+                        if (arrayName === 'lubeTypes') {
+                            // For lubeTypes, create a proper object structure
+                            // Use a temporary ID that will be replaced by backend
+                            const newLubeType = {
+                                id: `temp-${Date.now()}`, // Temporary ID
+                                name: trimmedItem
+                            };
+                            setSettings(prev => ({
+                                ...prev,
+                                [arrayName]: [...prev[arrayName], newLubeType]
+                            }));
+                        } else {
+                            // For other arrays, add as string
+                            setSettings(prev => ({
+                                ...prev,
+                                [arrayName]: [...prev[arrayName], trimmedItem]
+                            }));
+                        }
+                        showSuccessBanner(`"${trimmedItem}" added to ${itemDisplayName} successfully!`);
+                    }
+                });
+            }
         }
     };
 
@@ -371,6 +440,7 @@ const SettingsView = ({ showSuccessBanner }) => {
             case 'creditTypes': return 'Credit Sale Types';
             case 'expenseCategories': return 'Expense Categories';
             case 'cashModes': return 'Cash Collection Modes';
+            case 'lubeTypes': return 'Lube Types';
             default: return 'items';
         }
     };
@@ -378,17 +448,28 @@ const SettingsView = ({ showSuccessBanner }) => {
     const removeArrayItem = (arrayName, itemToRemove) => {
         const itemDisplayName = getArrayItemDisplayName(arrayName);
         
+        // Get display text for the item
+        const displayText = typeof itemToRemove === 'object' ? itemToRemove.name : itemToRemove;
+        
         showModal({
             title: 'Confirm Deletion',
-            text: `Are you sure you want to remove "${itemToRemove}" from ${itemDisplayName}?`,
+            text: `Are you sure you want to remove "${displayText}" from ${itemDisplayName}?`,
             confirmText: 'Delete',
             confirmClass: 'btn-danger',
             onConfirm: () => {
                 setSettings(prev => ({
                     ...prev,
-                    [arrayName]: prev[arrayName].filter(item => item !== itemToRemove)
+                    [arrayName]: prev[arrayName].filter(item => {
+                        if (arrayName === 'lubeTypes' && typeof item === 'object' && typeof itemToRemove === 'object') {
+                            // For object comparison, compare by id
+                            return item.id !== itemToRemove.id;
+                        } else {
+                            // For string comparison or mixed types, use direct comparison
+                            return item !== itemToRemove;
+                        }
+                    })
                 }));
-                showSuccessBanner(`"${itemToRemove}" removed from ${itemDisplayName} successfully!`);
+                showSuccessBanner(`"${displayText}" removed from ${itemDisplayName} successfully!`);
             }
         });
     };
@@ -552,6 +633,17 @@ const SettingsView = ({ showSuccessBanner }) => {
                                     setIsMobileSidebarOpen(false);
                                 }}
                             />
+                            {/* Moved Lube Types directly below Credit Sale Types */}
+                            <MobileSettingSidebarItem
+                                id="lube-types"
+                                label="Lube Types"
+                                icon="fa-oil-can"
+                                activeSection={activeSection}
+                                onClick={(id) => {
+                                    setActiveSection(id);
+                                    setIsMobileSidebarOpen(false);
+                                }}
+                            />
                             <MobileSettingSidebarItem
                                 id="expense-categories"
                                 label="Expense Categories"
@@ -618,6 +710,14 @@ const SettingsView = ({ showSuccessBanner }) => {
                                 id="credit-types"
                                 label="Credit Sale Types"
                                 icon="fa-credit-card"
+                                activeSection={activeSection}
+                                onClick={setActiveSection}
+                            />
+                            {/* Moved Lube Types directly below Credit Sale Types */}
+                            <SettingSidebarItem
+                                id="lube-types"
+                                label="Lube Types"
+                                icon="fa-oil-can"
                                 activeSection={activeSection}
                                 onClick={setActiveSection}
                             />
@@ -995,6 +1095,24 @@ const SettingsView = ({ showSuccessBanner }) => {
                         </SettingsCard>
                     )}
 
+                    {activeSection === 'lube-types' && (
+                        <SettingsCard
+                            title="Lube Types"
+                            isEditing={editingSection === 'lube-types'}
+                            onEdit={() => handleEdit('lube-types')}
+                            onSave={() => handleSave('lube-types')}
+                            onCancel={() => handleCancel('lube-types')}
+                        >
+                            <ArrayEditor
+                                items={settings.lubeTypes || []}
+                                isEditing={editingSection === 'lube-types'}
+                                onAdd={(item) => addArrayItem('lubeTypes', item)}
+                                onRemove={(item) => removeArrayItem('lubeTypes', item)}
+                                placeholder="New lube type name"
+                            />
+                        </SettingsCard>
+                    )}
+
                     {activeSection === 'historical-data' && (
                         <HistoricalDataSection settings={settings} showSuccessBanner={showSuccessBanner} />
                     )}
@@ -1068,17 +1186,23 @@ const ArrayEditor = ({ items, isEditing, onAdd, onRemove, placeholder }) => {
     return (
         <div>
             <div className="space-y-2">
-                {items.map(item => (
-                    <div key={item} className="flex justify-between items-center bg-gray-50 p-2 rounded-md">
-                        <span className="text-sm font-medium text-gray-700">{item}</span>
-                        <button
-                            className={`btn btn-danger-outline h-7 w-7 p-0 text-xs items-center justify-center ${isEditing ? 'flex' : 'hidden'}`}
-                            onClick={() => onRemove(item)}
-                        >
-                            <i className="fas fa-trash"></i>
-                        </button>
-                    </div>
-                ))}
+                {items.map(item => {
+                    // Handle both string items and object items (for lubeTypes)
+                    const displayText = typeof item === 'object' ? item.name : item;
+                    const keyValue = typeof item === 'object' ? item.id : item;
+                    
+                    return (
+                        <div key={keyValue} className="flex justify-between items-center bg-gray-50 p-2 rounded-md">
+                            <span className="text-sm font-medium text-gray-700">{displayText}</span>
+                            <button
+                                className={`btn btn-danger-outline h-7 w-7 p-0 text-xs items-center justify-center ${isEditing ? 'flex' : 'hidden'}`}
+                                onClick={() => onRemove(item)}
+                            >
+                                <i className="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
             {isEditing && (
                 <div className="flex gap-2 mt-4">
@@ -1155,6 +1279,10 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
     const [selectedDataType, setSelectedDataType] = useState('credit-sales');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [creditors, setCreditors] = useState([]);
+    
+    // Historical Data states
+    const [historicalDataLoading, setHistoricalDataLoading] = useState(false);
+    const [historicalDataResults, setHistoricalDataResults] = useState(null);
 
     const fetchCreditors = async () => {
         try {
@@ -1187,6 +1315,15 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
     const [expenseData, setExpenseData] = useState({
         payee: '',
         category: '',
+        amount: '',
+        remarks: ''
+    });
+
+    // Lube Sales Form State
+    const [lubeSalesData, setLubeSalesData] = useState({
+        lubeType: '',
+        paymentMode: '',
+        quantity: '',
         amount: '',
         remarks: ''
     });
@@ -1282,6 +1419,38 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
         } catch (error) {
             console.error('Error adding expense:', error);
             alert('Error adding expense: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleLubeSalesSubmit = async () => {
+        if (!lubeSalesData.lubeType || !lubeSalesData.paymentMode || !lubeSalesData.quantity || !lubeSalesData.amount) {
+            alert('Please fill all required fields');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const response = await axios.post(`${API_URL}/api/settings/historical-data/lube-sales`, {
+                date: selectedDate,
+                shift: selectedShift,
+                lubeType: lubeSalesData.lubeType,
+                paymentMode: lubeSalesData.paymentMode,
+                quantity: parseFloat(lubeSalesData.quantity),
+                amount: parseFloat(lubeSalesData.amount),
+                remarks: lubeSalesData.remarks
+            });
+
+            if (response.data.success) {
+                showSuccessBanner('Lube sale added successfully!');
+                setLubeSalesData({ lubeType: '', paymentMode: '', quantity: '', amount: '', remarks: '' });
+            } else {
+                alert('Failed to add lube sale: ' + response.data.message);
+            }
+        } catch (error) {
+            console.error('Error adding lube sale:', error);
+            alert('Error adding lube sale: ' + (error.response?.data?.message || error.message));
         } finally {
             setIsSubmitting(false);
         }
@@ -1519,10 +1688,139 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
                     </div>
                 );
 
+            case 'lube-sales':
+                return (
+                    <div className="card p-6">
+                        <h4 className="text-lg font-medium text-gray-900 mb-4">
+                            <i className="fas fa-oil-can mr-2 text-purple-600"></i>
+                            Add Lube Sale
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Lube Type *</label>
+                                <select
+                                    className="input-field"
+                                    value={lubeSalesData.lubeType}
+                                    onChange={(e) => setLubeSalesData(prev => ({ ...prev, lubeType: e.target.value }))}
+                                    required
+                                >
+                                    <option value="">Select Lube Type...</option>
+                                    {settings.lubeTypes?.map(type => (
+                                        <option key={type.id} value={type.name}>{type.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Mode *</label>
+                                <select
+                                    className="input-field"
+                                    value={lubeSalesData.paymentMode}
+                                    onChange={(e) => setLubeSalesData(prev => ({ ...prev, paymentMode: e.target.value }))}
+                                    required
+                                >
+                                    <option value="">Select Payment Mode...</option>
+                                    {settings.cashModes?.map(mode => (
+                                        <option key={mode} value={mode}>{mode}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    className="input-field"
+                                    value={lubeSalesData.quantity}
+                                    onChange={(e) => setLubeSalesData(prev => ({ ...prev, quantity: e.target.value }))}
+                                    placeholder="Quantity"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    step="0.01"
+                                    className="input-field"
+                                    value={lubeSalesData.amount}
+                                    onChange={(e) => setLubeSalesData(prev => ({ ...prev, amount: e.target.value }))}
+                                    placeholder="Amount"
+                                    required
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                                <input
+                                    type="text"
+                                    className="input-field"
+                                    value={lubeSalesData.remarks}
+                                    onChange={(e) => setLubeSalesData(prev => ({ ...prev, remarks: e.target.value }))}
+                                    placeholder="Remarks (optional)"
+                                />
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleLubeSalesSubmit}
+                            disabled={isSubmitting}
+                            className="btn btn-primary mt-4"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                                    Adding...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-plus mr-2"></i>
+                                    Add Lube Sale
+                                </>
+                            )}
+                        </button>
+                    </div>
+                );
+
             default:
                 return null;
         }
     };
+
+    // Historical Data Functions
+    const searchHistoricalData = async () => {
+        try {
+            setHistoricalDataLoading(true);
+            // This would be replaced with actual API call
+            // const response = await fetch(`/api/historical-data?date=${selectedDate}&shift=${selectedShift}`);
+            // const data = await response.json();
+            
+            // For now, simulate loading
+            setTimeout(() => {
+                setHistoricalDataResults({
+                    date: selectedDate,
+                    shift: selectedShift,
+                    data: [] // Empty results for now
+                });
+                setHistoricalDataLoading(false);
+            }, 1000);
+        } catch (error) {
+            console.error('Error searching historical data:', error);
+            setHistoricalDataLoading(false);
+        }
+    };
+
+    const handleHistoricalDataUpdate = (updatedData) => {
+        setHistoricalDataResults(updatedData);
+    };
+
+    // Mock HistoricalDataResults component
+    const HistoricalDataResults = ({ data, onUpdate }) => (
+        <div className="card p-6">
+            <h3 className="text-lg font-semibold mb-4">Historical Data Results</h3>
+            <p>Date: {data.date}</p>
+            <p>Shift: {data.shift}</p>
+            <p>No data found for the selected date and shift.</p>
+        </div>
+    );
 
     return (
         <div className="space-y-6">
@@ -1549,19 +1847,29 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
                             value={selectedShift}
                             onChange={(e) => setSelectedShift(e.target.value)}
                         >
-                            <option value="morning">Morning Shift</option>
-                            <option value="evening">Evening Shift</option>
+                            <option value="">Select Shift</option>
+                            <option value="morning">Morning</option>
+                            <option value="night">Night</option>
                         </select>
                     </div>
                 </div>
 
+                {/* Search Button */}
+                <button
+                    onClick={searchHistoricalData}
+                    disabled={!selectedDate || !selectedShift || historicalDataLoading}
+                    className="btn btn-primary"
+                >
+                    {historicalDataLoading ? 'Searching...' : 'Search Data'}
+                </button>
+
                 {/* Data Type Selector */}
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">What would you like to add?</label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="mt-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">What would you like to add?</label>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <button
                             onClick={() => setSelectedDataType('credit-sales')}
-                            className={`p-3 rounded-lg border-2 transition-all ${
+                            className={`p-4 rounded-lg border-2 transition-all ${
                                 selectedDataType === 'credit-sales'
                                     ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
                                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
@@ -1572,7 +1880,7 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
                         </button>
                         <button
                             onClick={() => setSelectedDataType('credit-collections')}
-                            className={`p-3 rounded-lg border-2 transition-all ${
+                            className={`p-4 rounded-lg border-2 transition-all ${
                                 selectedDataType === 'credit-collections'
                                     ? 'border-green-500 bg-green-50 text-green-700'
                                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
@@ -1582,8 +1890,19 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
                             Credit Collections
                         </button>
                         <button
+                            onClick={() => setSelectedDataType('lube-sales')}
+                            className={`p-4 rounded-lg border-2 transition-all ${
+                                selectedDataType === 'lube-sales'
+                                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                            }`}
+                        >
+                            <i className="fas fa-oil-can mb-2 block text-lg"></i>
+                            Lube Sales
+                        </button>
+                        <button
                             onClick={() => setSelectedDataType('expenses')}
-                            className={`p-3 rounded-lg border-2 transition-all ${
+                            className={`p-4 rounded-lg border-2 transition-all ${
                                 selectedDataType === 'expenses'
                                     ? 'border-red-500 bg-red-50 text-red-700'
                                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
@@ -1598,6 +1917,16 @@ const HistoricalDataSection = ({ settings, showSuccessBanner }) => {
 
             {/* Form Card */}
             {renderDataTypeForm()}
+
+            {/* Results */}
+            {historicalDataResults && (
+                <div className="space-y-6">
+                    <HistoricalDataResults 
+                        data={historicalDataResults}
+                        onUpdate={handleHistoricalDataUpdate}
+                    />
+                </div>
+            )}
         </div>
     );
 };

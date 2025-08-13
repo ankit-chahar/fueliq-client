@@ -14,7 +14,7 @@ const SuccessBanner = ({ message }) => {
     if (!show || !message) return null;
 
     return (
-        <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white py-4 px-6 rounded-lg shadow-lg flex items-center justify-center transition-all duration-300 ${show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999] bg-green-500 text-white py-4 px-6 rounded-lg shadow-2xl flex items-center justify-center transition-all duration-300 min-w-[300px] ${show ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95'}`}>
             <i className="fas fa-check-circle mr-3 text-xl"></i>
             <span className="text-lg font-medium">{message}</span>
         </div>

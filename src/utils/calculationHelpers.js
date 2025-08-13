@@ -45,6 +45,36 @@ export const calculateFuelSales = (fuelEntries) => {
 };
 
 /**
+ * Calculate lube sales from frontend entries, separated by payment mode
+ * @param {Array} lubeSales - Array of lube sales from frontend
+ * @returns {Object} Lube sales breakdown
+ */
+export const calculateLubeSales = (lubeSales = []) => {
+    let totalLubeSales = 0;
+    let cashLubeSales = 0;
+    let digitalLubeSales = 0;
+    
+    lubeSales.forEach(sale => {
+        const amount = Math.round(parseFloat(sale.amount) || 0);
+        const paymentMode = (sale.paymentMode || '').toLowerCase();
+        
+        totalLubeSales += amount;
+        
+        if (paymentMode === 'cash') {
+            cashLubeSales += amount;
+        } else {
+            digitalLubeSales += amount;
+        }
+    });
+    
+    return {
+        totalLubeSales,
+        cashLubeSales,
+        digitalLubeSales
+    };
+};
+
+/**
  * Calculate credit sales total
  * @param {Array} creditSales - Array of credit sales
  * @returns {number} Total credit sales
@@ -108,7 +138,7 @@ export const calculateCollections = (cashCollections) => {
  * @returns {Object} Calculated totals
  */
 export const calculateShiftTotals = (shiftData) => {
-    const { fuelEntries = [], creditSales = [], expenses = [], cashCollections = [], actualCash = '' } = shiftData;
+    const { fuelEntries = [], creditSales = [], lubeSales = [], expenses = [], cashCollections = [], actualCash = '' } = shiftData;
     
     // Calculate fuel sales
     const fuelResults = calculateFuelSales(fuelEntries);
@@ -117,12 +147,14 @@ export const calculateShiftTotals = (shiftData) => {
     const totalCreditSales = calculateCreditSales(creditSales);
     const totalExpenses = calculateExpenses(expenses);
     const collections = calculateCollections(cashCollections);
+    const lubeResults = calculateLubeSales(lubeSales);
     
-    // Calculate expected cash: cash from fuel - credit sales - expenses + cash collections (cash only)
-    const expectedCash = Math.round(fuelResults.cashFromFuel - totalCreditSales - totalExpenses + collections.cashCollectionsAmount);
+    // Calculate expected cash: cash from fuel + cash lube sales - credit sales - expenses + cash collections (cash only)
+    const expectedCash = Math.round(fuelResults.cashFromFuel + lubeResults.cashLubeSales - totalCreditSales - totalExpenses + collections.cashCollectionsAmount);
     
-    // Total digital payments (fuel + collections)
-    const totalDigitalPayments = Math.round(fuelResults.totalDigitalPaymentsFromFuel + collections.digitalCollectionsAmount);
+    // Total digital payments (fuel + collections + digital lube sales)
+    const totalDigitalPaymentsOtherThanFuel = Math.round(collections.digitalCollectionsAmount + lubeResults.digitalLubeSales);
+    const totalDigitalPayments = Math.round(fuelResults.totalDigitalPaymentsFromFuel + totalDigitalPaymentsOtherThanFuel);
     
     // Get actual cash from input
     const actualCashAmount = Math.round(parseFloat(actualCash) || 0);
@@ -134,18 +166,20 @@ export const calculateShiftTotals = (shiftData) => {
         // Frontend display values
         totalFuelSale: fuelResults.totalFuelSale,
         totalDigitalPaymentsFromFuel: fuelResults.totalDigitalPaymentsFromFuel,
-        otherDigitalPayments: collections.digitalCollectionsAmount,
+        digitalPaymentsOtherThanFuel: totalDigitalPaymentsOtherThanFuel, // Updated name
         totalDigitalPayments,
         cashFromFuel: fuelResults.cashFromFuel,
         totalCreditSales,
         creditReceipts: collections.cashCollectionsAmount,
         totalExpenses,
+        cashLubeSales: lubeResults.cashLubeSales, // Only cash lube sales
+        totalLubeSales: lubeResults.totalLubeSales, // Total lube sales for backend
         expectedCash,
         actualCash: actualCashAmount,
         cashDifference,
         
-        // Backend expected field names with updated names
-        totalSaleAmount: fuelResults.totalFuelSale,
+        // Backend expected field names
+        totalSaleAmount: fuelResults.totalFuelSale + lubeResults.totalLubeSales, // include all lube sales in total sale amount for backend aggregate
         totalCashExpected: expectedCash,
         totalCashActual: actualCashAmount,
         totalCredit: totalCreditSales,

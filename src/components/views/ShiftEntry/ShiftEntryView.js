@@ -11,6 +11,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
         shiftType: 'morning',
         fuelEntries: [],
         creditSales: [],
+        lubeSales: [], // NEW
         expenses: [],
         cashCollections: [],
         actualCash: ''
@@ -34,7 +35,8 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
         fuels: [],
         creditTypes: [],
         cashModes: [],
-        expenseCategories: []
+        expenseCategories: [],
+        lubeTypes: []
     });
     const [settingsLoading, setSettingsLoading] = useState(true);
     const [settingsError, setSettingsError] = useState(null);
@@ -473,13 +475,17 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
             partyName: '',
             category: '',
             amount: '',
-            remarks: ''
+            remarks: '',
+            // Lube specific fields
+            // itemName removed per new requirement
+            quantity: '',   // lube
+            paymentMode: '', // lube payment mode
         };
 
-        // Map the type to the correct property name
         const propertyName = type === 'cash' ? 'cashCollections' : 
                            type === 'credit' ? 'creditSales' : 
-                           type === 'expense' ? 'expenses' : type;
+                           type === 'expense' ? 'expenses' : 
+                           type === 'lube' ? 'lubeSales' : type;
 
         setShiftData(prev => ({
             ...prev,
@@ -488,10 +494,10 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     };
 
     const removeDynamicEntry = (type, id) => {
-        // Map the type to the correct property name
         const propertyName = type === 'cash' ? 'cashCollections' : 
                            type === 'credit' ? 'creditSales' : 
-                           type === 'expense' ? 'expenses' : type;
+                           type === 'expense' ? 'expenses' : 
+                           type === 'lube' ? 'lubeSales' : type;
 
         setShiftData(prev => ({
             ...prev,
@@ -500,10 +506,10 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     };
 
     const updateDynamicEntry = (type, id, field, value) => {
-        // Map the type to the correct property name
         const propertyName = type === 'cash' ? 'cashCollections' : 
                            type === 'credit' ? 'creditSales' : 
-                           type === 'expense' ? 'expenses' : type;
+                           type === 'expense' ? 'expenses' : 
+                           type === 'lube' ? 'lubeSales' : type;
 
         setShiftData(prev => ({
             ...prev,
@@ -606,6 +612,18 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
             if (collection.amount !== '' && !isValidNonNegativeNumber(collection.amount)) {
                 errors.push(`Cash Collection ${index + 1}: Amount must be non-negative`);
                 newValidationErrors[`cash_${collection.id}_amount`] = true;
+            }
+        });
+
+        // Validate lube sales amounts and quantity
+        shiftData.lubeSales?.forEach((sale, index) => {
+            if (sale.amount !== '' && !isValidNonNegativeNumber(sale.amount)) {
+                errors.push(`Lube Sale ${index + 1}: Amount must be non-negative`);
+                newValidationErrors[`lube_${sale.id}_amount`] = true;
+            }
+            if (sale.quantity !== '' && !isValidNonNegativeNumber(sale.quantity)) {
+                errors.push(`Lube Sale ${index + 1}: Quantity must be non-negative`);
+                newValidationErrors[`lube_${sale.id}_quantity`] = true;
             }
         });
 
@@ -713,12 +731,24 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                     remarks: collection.remarks || ''
                 }));
 
+            const transformedLubeSales = shiftData.lubeSales
+                .filter(sale => sale.category && sale.amount)
+                .map(sale => ({
+                    // itemName removed
+                    lubeType: sale.category || '',
+                    paymentMode: sale.paymentMode || '',
+                    quantity: parseFloat(sale.quantity) || 0,
+                    amount: Math.round(parseFloat(sale.amount) || 0),
+                    remarks: sale.remarks || ''
+                }));
+
             const payload = {
                 shiftDate: shiftData.shiftDate,
                 shiftType: shiftData.shiftType,
                 fuelEntries: transformedFuelEntries,
                 digitalPayments: transformedDigitalPayments,
                 creditSales: transformedCreditSales,
+                lubeSales: transformedLubeSales, // NEW
                 expenses: transformedExpenses,
                 cashCollections: transformedCashCollections,
                 totals
@@ -745,6 +775,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                 shiftType: 'morning',
                 fuelEntries: [],
                 creditSales: [],
+                lubeSales: [],
                 expenses: [],
                 cashCollections: [],
                 actualCash: ''
@@ -1105,6 +1136,94 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                         </button>
                     </div>
 
+                    {/* Lube Sales Card */}
+                    <div className="card p-4">
+                        <h2 className="text-lg font-bold mb-4 text-gray-700">Lube Sales</h2>
+                        <div className="space-y-3">
+                            {shiftData.lubeSales.map(lube => (
+                                <div key={lube.id} className="border border-gray-200 rounded-lg p-3 space-y-3">
+                                    <div className="grid grid-cols-12 gap-2 items-center">
+                                        <div className="col-span-12 md:col-span-3">
+                                            <select 
+                                                className="input-field bg-white"
+                                                value={lube.category}
+                                                onChange={(e) => updateDynamicEntry('lube', lube.id, 'category', e.target.value)}
+                                            >
+                                                <option value="">Select Lube Type...</option>
+                                                {(settings.lubeTypes || []).length === 0 && (
+                                                    <option value="" disabled>No lube types configured</option>
+                                                )}
+                                                {(settings.lubeTypes || []).map(lubeType => (
+                                                    <option key={lubeType.id || lubeType.name || lubeType} value={lubeType.name || lubeType}>{lubeType.name || lubeType}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-12 md:col-span-3">
+                                            <select
+                                                className="input-field bg-white"
+                                                value={lube.paymentMode || ''}
+                                                onChange={(e) => updateDynamicEntry('lube', lube.id, 'paymentMode', e.target.value)}
+                                            >
+                                                <option value="">Payment Mode...</option>
+                                                {(settings.cashModes || []).length === 0 && (
+                                                    <option value="" disabled>No modes configured</option>
+                                                )}
+                                                {(settings.cashModes || []).map(mode => (
+                                                    <option key={mode.id || mode.name || mode} value={mode.name || mode}>{mode.name || mode}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-6 md:col-span-2">
+                                            <input 
+                                                type="number" 
+                                                inputMode="decimal"
+                                                className={getInputClassName('input-field', 
+                                                    isValidNonNegativeNumber(lube.quantity) && !validationErrors[`lube_${lube.id}_quantity`])}
+                                                placeholder="Qty"
+                                                value={lube.quantity}
+                                                onChange={(e) => updateDynamicEntry('lube', lube.id, 'quantity', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="col-span-6 md:col-span-2">
+                                            <input 
+                                                type="number" 
+                                                inputMode="numeric"
+                                                className={getInputClassName('input-field', 
+                                                    isValidNonNegativeNumber(lube.amount) && !validationErrors[`lube_${lube.id}_amount`])}
+                                                placeholder="₹ Amount"
+                                                value={lube.amount}
+                                                onChange={(e) => updateDynamicEntry('lube', lube.id, 'amount', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="col-span-12 md:col-span-2">
+                                            <button 
+                                                className="btn btn-danger w-full"
+                                                onClick={() => removeDynamicEntry('lube', lube.id)}
+                                            >
+                                                <i className="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="col-span-12">
+                                        <input 
+                                            type="text" 
+                                            className="input-field w-full" 
+                                            placeholder="Remarks (optional)"
+                                            value={lube.remarks || ''}
+                                            onChange={(e) => updateDynamicEntry('lube', lube.id, 'remarks', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <button 
+                            onClick={() => addDynamicEntry('lube')} 
+                            className="btn btn-secondary w-full mt-3"
+                        >
+                            <i className="fas fa-plus mr-2"></i>Add Lube Sale
+                        </button>
+                    </div>
+
                     {/* Credit Collections Card */}
                     <div className="card p-4">
                         <h2 className="text-lg font-bold mb-4 text-gray-700">Credit Collection</h2>
@@ -1273,6 +1392,10 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                     <span>(-) Expenses (Cash):</span> 
                                     <span className="text-red-600">{formatMoney(totals.totalExpenses)}</span>
                                 </div>
+                                <div className="flex justify-between font-semibold">
+                                    <span>(+) Lube Sales (Cash):</span>
+                                    <span className="text-green-600">{formatMoney(totals.cashLubeSales || 0)}</span>
+                                </div>
                                 <hr className="my-2 border-t-2 border-gray-300" />
                                 <div className="flex justify-between text-lg">
                                     <span className="font-bold">Expected Cash:</span>
@@ -1325,8 +1448,8 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                         <span>{formatMoney(totals.totalDigitalPaymentsFromFuel)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>Digital Payment from Credit Collection:</span> 
-                                        <span>{formatMoney(totals.otherDigitalPayments)}</span>
+                                        <span>Digital payment other than Fuel:</span> 
+                                        <span>{formatMoney(totals.digitalPaymentsOtherThanFuel)}</span>
                                     </div>
                                     <div className="flex justify-between font-medium">
                                         <span>Total Digital Payments:</span> 
