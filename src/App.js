@@ -65,7 +65,7 @@ function AppContent() {
             case 'settings':
                 return <SettingsView showSuccessBanner={showSuccessBanner} />;
             case 'history':
-                return <HistoricalDataView />;
+                return <HistoricalDataView showSuccessBanner={showSuccessBanner} />;
             case 'change-password':
                 return <ChangePasswordView showSuccessBanner={showSuccessBanner} />;
             case 'dashboard':

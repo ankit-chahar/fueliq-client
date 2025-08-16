@@ -5,7 +5,7 @@ import { formatMoney, formatLitre, generateId } from '../../../utils/formatters'
 import { calculateShiftTotals } from '../../../utils/calculationHelpers';
 import { SearchableCreditorInput } from '../../common';
 
-const ShiftEntryView = ({ showSuccessBanner }) => {
+const ShiftEntryView = ({ showSuccessBanner, editMode = false, initialShiftData = null, onUpdateSuccess = null }) => {
     const [shiftData, setShiftData] = useState({
         shiftDate: new Date().toISOString().split('T')[0],
         shiftType: 'morning',
@@ -33,8 +33,8 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     // Settings data that this component needs
     const [settings, setSettings] = useState({
         fuels: [],
-        creditTypes: [],
         cashModes: [],
+        creditTypes: [],
         expenseCategories: [],
         lubeTypes: []
     });
@@ -42,6 +42,245 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
     const [settingsError, setSettingsError] = useState(null);
 
     const fuelTypes = settings.fuels || [];
+
+    // Function to populate form with existing shift data (for edit mode)
+    const populateFormWithShiftData = useCallback(async (shiftData) => {
+        if (!shiftData || !shiftData.id) return;
+
+        try {
+            // Fetch detailed shift data including all related entities
+            const response = await axios.get(`${API_URL}/api/shifts/${shiftData.id}/details`);
+            
+            if (response.data.success) {
+                const detailedShift = response.data.data;
+                
+                // Debug: Log the entire API response structure
+                console.log('Full API response structure:', {
+                    shift: detailedShift.shift ? 'present' : 'missing',
+                    readings: detailedShift.readings ? `${detailedShift.readings.length} items` : 'missing',
+                    digitalPayments: detailedShift.digitalPayments ? `${detailedShift.digitalPayments.length} items` : 'missing',
+                    creditSales: detailedShift.creditSales ? `${detailedShift.creditSales.length} items` : 'missing',
+                    expenses: detailedShift.expenses ? `${detailedShift.expenses.length} items` : 'missing',
+                    cashCollections: detailedShift.cashCollections ? `${detailedShift.cashCollections.length} items` : 'missing',
+                    lubeSales: detailedShift.lubeSales ? `${detailedShift.lubeSales.length} items` : 'missing'
+                });
+                
+                const shift = detailedShift.shift;
+                const readings = detailedShift.readings || [];
+                const digitalPayments = detailedShift.digitalPayments || []; // Fix: use digitalPayments instead of fuelSales
+                const creditSales = detailedShift.creditSales || [];
+                const expenses = detailedShift.expenses || [];
+                const cashCollections = detailedShift.cashCollections || []; // Fix: use cashCollections instead of creditCollections
+                const lubeSales = detailedShift.lubeSales || [];
+
+                // Populate basic shift data
+                console.log('Raw shift data from API:', {
+                    shift_date: shift.shift_date,
+                    shift_type: shift.shift_type,
+                    total_cash_actual: shift.total_cash_actual
+                });
+                
+                // Ensure date is in correct format (YYYY-MM-DD) for HTML date input
+                let formattedDate = shift.shift_date;
+                if (shift.shift_date) {
+                    // If the date contains time or is in different format, extract just the date part
+                    const dateObj = new Date(shift.shift_date);
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toISOString().split('T')[0];
+                    }
+                }
+                
+                console.log('Formatted date for input:', formattedDate);
+                
+                setShiftData(prev => ({
+                    ...prev,
+                    shiftDate: formattedDate,
+                    shiftType: shift.shift_type,
+                    actualCash: shift.total_cash_actual ? shift.total_cash_actual.toString() : ''
+                }));
+
+                // Wait for fuel types to be loaded
+                if (fuelTypes.length === 0) {
+                    console.log('Waiting for fuel types to load before populating form...');
+                    return; // This will be retried when fuelTypes are loaded
+                }
+
+                // Group readings by fuel type to reconstruct fuel entries
+                const fuelEntryMap = new Map();
+                
+                // Debug: Log the readings data from API
+                console.log('Raw readings from API:', readings.map(r => ({
+                    fuel_type: r.fuel_type,
+                    nozzle_number: r.nozzle_number,
+                    testing_litres: r.testing_litres,
+                    opening_reading: r.opening_reading,
+                    closing_reading: r.closing_reading
+                })));
+
+                // Debug: Log the digital payments data from API
+                console.log('Raw digital payments from API:', digitalPayments);
+
+                // Debug: Log the cash collections data from API  
+                console.log('Raw cash collections from API:', cashCollections);
+                
+                readings.forEach(reading => {
+                    const fuelType = reading.fuel_type;
+                    
+                    if (!fuelEntryMap.has(fuelType)) {
+                        // Find fuel info from settings
+                        const fuelInfo = fuelTypes.find(f => f.id === fuelType);
+                        const nozzleCount = fuelInfo ? fuelInfo.nozzles : 4; // Default to 4 if not found
+                        
+                        // Debug: Log fuel types structure and matching
+                        console.log('Available fuelTypes:', fuelTypes.map(f => ({ id: f.id, name: f.name })));
+                        console.log('Looking for fuelType:', fuelType);
+                        console.log('Found fuelInfo:', fuelInfo);
+                        
+                        // Use fuel name from settings (name column from fuels table)
+                        // Priority: 1. fuelInfo.name (from fuels table), 2. reading.fuel_name (from API), 3. fuelType (UUID as fallback)
+                        let fuelName;
+                        if (fuelInfo && fuelInfo.name) {
+                            fuelName = fuelInfo.name; // Use name column from fuels table
+                        } else if (reading.fuel_name) {
+                            fuelName = reading.fuel_name; // Fallback to API fuel_name
+                        } else {
+                            fuelName = fuelType; // Last resort: use UUID
+                        }
+                        
+                        // Debug: Log fuel name resolution
+                        console.log('Fuel name resolution:', {
+                            fuelType: fuelType,
+                            fuelInfoName: fuelInfo?.name,
+                            readingFuelName: reading.fuel_name,
+                            finalFuelName: fuelName
+                        });
+                        
+                        fuelEntryMap.set(fuelType, {
+                            id: generateId(),
+                            fuelType: fuelType,
+                            fuelName: fuelName,
+                            openingReadings: Array(nozzleCount).fill(''),
+                            closingReadings: Array(nozzleCount).fill(''),
+                            testingLitres: '0',
+                            unitPrice: reading.unit_price || 0,
+                            digitalPayments: {
+                                paytm: '0',
+                                phonepe: '0',
+                                other: '0'
+                            }
+                        });
+                    }
+                    
+                    const entry = fuelEntryMap.get(fuelType);
+                    const nozzleIndex = reading.nozzle_number - 1; // Convert to 0-based index
+                    
+                    if (nozzleIndex >= 0 && nozzleIndex < entry.openingReadings.length) {
+                        entry.openingReadings[nozzleIndex] = reading.opening_reading.toString();
+                        entry.closingReadings[nozzleIndex] = reading.closing_reading.toString();
+                        
+                        // Accumulate testing litres across all nozzles for this fuel type
+                        const currentTesting = parseFloat(entry.testingLitres) || 0;
+                        const nozzleTesting = parseFloat(reading.testing_litres) || 0;
+                        const newTotal = currentTesting + nozzleTesting;
+                        
+                        // Debug: Log the testing accumulation
+                        console.log(`Fuel ${reading.fuel_type}, Nozzle ${reading.nozzle_number}: current=${currentTesting}, nozzle=${nozzleTesting}, new_total=${newTotal}`);
+                        
+                        entry.testingLitres = newTotal.toString();
+                    }
+                });
+
+                // Add digital payments to fuel entries
+                digitalPayments.forEach(digitalPayment => {
+                    const entry = fuelEntryMap.get(digitalPayment.fuel_type);
+                    if (entry) {
+                        entry.digitalPayments = {
+                            paytm: (digitalPayment.paytm_amount || 0).toString(),
+                            phonepe: (digitalPayment.phonepe_amount || 0).toString(),
+                            other: (digitalPayment.other_digital_amount || 0).toString()
+                        };
+                    }
+                });
+
+                // Convert map to array
+                const populatedFuelEntries = Array.from(fuelEntryMap.values());
+
+                // Debug: Log the populated fuel entries to verify testing calculation
+                console.log('Populated Fuel Entries:', populatedFuelEntries.map(entry => ({
+                    fuelType: entry.fuelType,
+                    testingLitres: entry.testingLitres,
+                    digitalPayments: entry.digitalPayments,
+                    openingReadings: entry.openingReadings,
+                    closingReadings: entry.closingReadings
+                })));
+
+                // Populate credit sales
+                const populatedCreditSales = creditSales.map(sale => ({
+                    id: generateId(),
+                    partyName: sale.party_name || '',
+                    category: sale.fuel_type || '',  // Map fuel_type to category
+                    amount: (sale.amount || 0).toString(),
+                    remarks: sale.remarks || ''
+                }));
+
+                // Populate lube sales
+                const populatedLubeSales = lubeSales.map(sale => ({
+                    id: generateId(),
+                    category: sale.lube_type || '',
+                    paymentMode: sale.payment_mode || '',
+                    quantity: (sale.quantity || 0).toString(),
+                    amount: (sale.amount || 0).toString(),
+                    remarks: sale.remarks || ''
+                }));
+
+                // Populate expenses
+                const populatedExpenses = expenses.map(expense => ({
+                    id: generateId(),
+                    partyName: expense.payee || '',
+                    category: expense.category || '',
+                    amount: (expense.amount || 0).toString(),
+                    remarks: expense.remarks || ''
+                }));
+
+                // Populate credit collections
+                const populatedCreditCollections = cashCollections.map(collection => ({
+                    id: generateId(),
+                    partyName: collection.source || '', // Fix: use 'source' field from database
+                    category: collection.mode || '',    // Fix: use 'mode' field from database
+                    amount: (collection.amount || 0).toString(),
+                    remarks: collection.remarks || ''
+                }));
+
+                // Update state with all populated data
+                setShiftData(prev => ({
+                    ...prev,
+                    fuelEntries: populatedFuelEntries,
+                    creditSales: populatedCreditSales,
+                    lubeSales: populatedLubeSales,
+                    expenses: populatedExpenses,
+                    cashCollections: populatedCreditCollections
+                }));
+
+                // Set existing shift ID for update operations
+                setExistingShiftId(shift.id);
+
+                console.log('Form populated with existing shift data');
+            }
+        } catch (error) {
+            console.error('Error populating form with shift data:', error);
+            if (showSuccessBanner) {
+                showSuccessBanner('Error loading shift data for editing');
+            }
+        }
+    }, [fuelTypes, showSuccessBanner]);
+
+    // Populate form when in edit mode and initial data is provided
+    useEffect(() => {
+        if (editMode && initialShiftData && fuelTypes.length > 0) {
+            console.log('About to populate form. FuelTypes available:', fuelTypes);
+            populateFormWithShiftData(initialShiftData);
+        }
+    }, [editMode, initialShiftData, fuelTypes.length, populateFormWithShiftData]);
 
     // Fetch settings data
     const fetchSettings = async () => {
@@ -114,6 +353,12 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
 
     // Helper functions - must be defined before useEffect hooks that use them
     const checkExistingShift = useCallback(async () => {
+        // Skip checking for existing shift if we're in edit mode
+        if (editMode) {
+            setExistingShiftId(null);
+            return;
+        }
+
         // Don't check if date or shift type is not set
         if (!shiftData.shiftDate || !shiftData.shiftType) {
             setExistingShiftId(null);
@@ -143,7 +388,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
         } finally {
             setCheckingExistingShift(false);
         }
-    }, [shiftData.shiftDate, shiftData.shiftType]);
+    }, [shiftData.shiftDate, shiftData.shiftType, editMode]);
 
     // Helper function to determine previous shift details
     const getPreviousShiftDetails = (currentDate, currentShiftType) => {
@@ -473,9 +718,9 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
         const newEntry = {
             id: generateId(),
             partyName: '',
-            category: '',
             amount: '',
             remarks: '',
+            category: '', // for credit sales, this represents fuel type
             // Lube specific fields
             // itemName removed per new requirement
             quantity: '',   // lube
@@ -534,8 +779,8 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
             newValidationErrors.futureDate = true;
         }
 
-        // Check for existing shift - prevent duplicate submission without explicit confirmation
-        if (existingShiftId) {
+        // Check for existing shift - prevent duplicate submission without explicit confirmation (only in create mode)
+        if (existingShiftId && !editMode) {
             errors.push(`A shift already exists for ${shiftData.shiftDate} (${shiftData.shiftType}). Please use a different date/shift or confirm overwrite.`);
             newValidationErrors.duplicateShift = true;
         }
@@ -755,12 +1000,28 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
             };
 
             console.log('Submitting shift data:', payload);
+            console.log('Save operation debug:', { editMode, existingShiftId, hasInitialData: !!initialShiftData });
 
-            const response = await axios.post(`${API_URL}/api/shifts`, payload);
+            let response;
+            if (editMode && existingShiftId) {
+                // Update existing shift using delta approach
+                // Wrap payload in delta structure to trigger backend delta logic
+                const deltaPayload = {
+                    delta: true, // Explicit delta flag to ensure backend uses delta methods
+                    ...payload
+                };
+                response = await axios.put(`${API_URL}/api/shifts/${existingShiftId}`, deltaPayload);
+            } else {
+                // Create new shift
+                response = await axios.post(`${API_URL}/api/shifts`, payload);
+            }
             
             showSuccessBanner(
-                `Shift data saved successfully! Shift ID: ${response.data.shiftId}. ` +
-                `Expected Cash: ${formatMoney(totals.expectedCash)}`
+                editMode 
+                    ? `Shift data updated successfully! Shift ID: ${existingShiftId || response.data.shiftId}. ` +
+                      `Expected Cash: ${formatMoney(totals.expectedCash)}`
+                    : `Shift data saved successfully! Shift ID: ${response.data.shiftId}. ` +
+                      `Expected Cash: ${formatMoney(totals.expectedCash)}`
             );
 
             // Refresh creditors list to include any new creditors from cash collections
@@ -769,19 +1030,28 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
             // Refresh expense payees list to include any new payees from expenses
             fetchExpensePayees();
 
-            // Reset form for new shift
-            setShiftData({
-                shiftDate: new Date().toISOString().split('T')[0],
-                shiftType: 'morning',
-                fuelEntries: [],
-                creditSales: [],
-                lubeSales: [],
-                expenses: [],
-                cashCollections: [],
-                actualCash: ''
-            });
+            // Call onUpdateSuccess callback if in edit mode and callback is provided
+            if (editMode && onUpdateSuccess) {
+                onUpdateSuccess();
+            }
 
-            setExistingShiftId(response.data.shiftId);
+            // Reset form for new shift only if not in edit mode
+            if (!editMode) {
+                setShiftData({
+                    shiftDate: new Date().toISOString().split('T')[0],
+                    shiftType: 'morning',
+                    fuelEntries: [],
+                    creditSales: [],
+                    lubeSales: [],
+                    expenses: [],
+                    cashCollections: [],
+                    actualCash: ''
+                });
+            }
+
+            if (!editMode) {
+                setExistingShiftId(response.data.shiftId);
+            }
 
         } catch (error) {
             console.error('Error submitting shift:', error);
@@ -851,8 +1121,8 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                     </div>
                 )}
                 
-                {/* Existing shift warning banner */}
-                {existingShiftId && (
+                {/* Existing shift warning banner - only show in create mode, not edit mode */}
+                {existingShiftId && !editMode && (
                     <div className="mt-4 p-4 bg-red-100 border-2 border-red-500 rounded-lg shadow-lg">
                         <div className="flex items-start">
                             <div className="flex-1">
@@ -1081,22 +1351,22 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                 className="input-field bg-white"
                                             />
                                         </div>
-                                        <div className="col-span-12 md:col-span-3">
+                                        <div className="col-span-6 md:col-span-3">
                                             <select 
-                                                className="input-field bg-white"
-                                                value={sale.category}
+                                                className={getInputClassName('input-field', 
+                                                    sale.category && !validationErrors[`credit_${sale.id}_category`])}
+                                                value={sale.category || ''}
                                                 onChange={(e) => updateDynamicEntry('credit', sale.id, 'category', e.target.value)}
                                             >
-                                                <option value="">Select Credit Type...</option>
-                                                {(settings.creditTypes || []).length === 0 && (
-                                                    <option value="" disabled>No credit types configured</option>
-                                                )}
-                                                {(settings.creditTypes || []).map(type => (
-                                                    <option key={type.id || type.name || type} value={type.name || type}>{type.name || type}</option>
+                                                <option value="">Select Credit Type</option>
+                                                {settings.creditTypes?.map((type, index) => (
+                                                    <option key={index} value={type}>
+                                                        {type}
+                                                    </option>
                                                 ))}
                                             </select>
                                         </div>
-                                        <div className="col-span-8 md:col-span-3">
+                                        <div className="col-span-4 md:col-span-3">
                                             <input 
                                                 type="number" 
                                                 inputMode="numeric"
@@ -1107,7 +1377,7 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                                 onChange={(e) => updateDynamicEntry('credit', sale.id, 'amount', e.target.value)}
                                             />
                                         </div>
-                                        <div className="col-span-4 md:col-span-2">
+                                        <div className="col-span-2 md:col-span-2">
                                             <button 
                                                 className="btn btn-danger w-full"
                                                 onClick={() => removeDynamicEntry('credit', sale.id)}
@@ -1466,12 +1736,12 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                             {isSubmitting ? (
                                 <>
                                     <i className="fas fa-spinner fa-spin mr-2"></i>
-                                    Saving Shift Data...
+                                    {editMode ? 'Updating Shift Data...' : 'Saving Shift Data...'}
                                 </>
                             ) : (
                                 <>
-                                    <i className="fas fa-upload mr-2"></i>
-                                    Submit Shift Data
+                                    <i className={`fas ${editMode ? 'fa-edit' : 'fa-upload'} mr-2`}></i>
+                                    {editMode ? 'Update Shift Data' : 'Submit Shift Data'}
                                 </>
                             )}
                         </button>
@@ -1487,12 +1757,17 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
                                 <i className="fas fa-upload text-blue-600"></i>
                             </div>
-                            <h3 className="text-lg leading-6 font-medium text-gray-900 mt-2">Confirm Shift Submission</h3>
+                            <h3 className="text-lg leading-6 font-medium text-gray-900 mt-2">
+                                {editMode ? 'Confirm Shift Update' : 'Confirm Shift Submission'}
+                            </h3>
                             <div className="mt-2 px-7 py-3">
                                 <p className="text-sm text-gray-500">
-                                    Are you sure you want to submit this shift data? This action will save all the entered information.
+                                    {editMode 
+                                        ? 'Are you sure you want to update this shift data? This action will save all the changes.'
+                                        : 'Are you sure you want to submit this shift data? This action will save all the entered information.'
+                                    }
                                 </p>
-                                {existingShiftId && (
+                                {existingShiftId && !editMode && (
                                     <p className="text-sm text-orange-600 mt-2">
                                         <i className="fas fa-exclamation-triangle mr-1"></i>
                                         This will overwrite existing shift data.
@@ -1510,8 +1785,8 @@ const ShiftEntryView = ({ showSuccessBanner }) => {
                                     onClick={handleConfirmSubmit}
                                     className="btn btn-primary"
                                 >
-                                    <i className="fas fa-upload mr-2"></i>
-                                    Submit Shift Data
+                                    <i className={`fas ${editMode ? 'fa-edit' : 'fa-upload'} mr-2`}></i>
+                                    {editMode ? 'Update Shift Data' : 'Submit Shift Data'}
                                 </button>
                             </div>
                         </div>

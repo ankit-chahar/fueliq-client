@@ -53,6 +53,15 @@ body {
     font-size: 0.875rem;
 }
 
+.input-field-sm {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+}
+
 /* Remove spinner arrows from number inputs */
 .input-field[type="number"]::-webkit-outer-spin-button,
 .input-field[type="number"]::-webkit-inner-spin-button {
