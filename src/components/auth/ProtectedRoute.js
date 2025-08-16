@@ -10,8 +10,12 @@ const ProtectedRoute = ({ children }) => {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
-                    <div className="h-16 w-16 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-                        <i className="fas fa-gas-pump text-white text-2xl"></i>
+                    <div className="flex justify-center mb-4">
+                        <img 
+                            src="/images/fueliq.png" 
+                            alt="FueliQ Logo" 
+                            className="h-32 w-auto"
+                        />
                     </div>
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <h2 className="text-xl font-semibold text-gray-700">Loading FueliQ...</h2>
