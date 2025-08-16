@@ -779,9 +779,9 @@ const ShiftEntryView = ({ showSuccessBanner, editMode = false, initialShiftData 
             newValidationErrors.futureDate = true;
         }
 
-        // Check for existing shift - prevent duplicate submission without explicit confirmation (only in create mode)
+        // Check for existing shift - prevent duplicate submission (only in create mode, not in edit mode)
         if (existingShiftId && !editMode) {
-            errors.push(`A shift already exists for ${shiftData.shiftDate} (${shiftData.shiftType}). Please use a different date/shift or confirm overwrite.`);
+            errors.push(`A shift already exists for ${shiftData.shiftDate} (${shiftData.shiftType}). Please use a different date/shift type.`);
             newValidationErrors.duplicateShift = true;
         }
 
@@ -1000,25 +1000,35 @@ const ShiftEntryView = ({ showSuccessBanner, editMode = false, initialShiftData 
             };
 
             console.log('Submitting shift data:', payload);
-            console.log('Save operation debug:', { editMode, existingShiftId, hasInitialData: !!initialShiftData });
+            console.log('Save operation debug:', { 
+                editMode, 
+                existingShiftId, 
+                hasInitialData: !!initialShiftData,
+                shiftDataId: shiftData?.id || 'no id in shiftData',
+                initialDataId: initialShiftData?.id || 'no id in initialShiftData'
+            });
 
             let response;
-            if (editMode && existingShiftId) {
+            // Use PUT (update) if we're in edit mode OR if we have any shift ID available
+            const shiftId = existingShiftId || initialShiftData?.id;
+            if (editMode || shiftId) {
                 // Update existing shift using delta approach
+                console.log('Updating existing shift with ID:', shiftId);
                 // Wrap payload in delta structure to trigger backend delta logic
                 const deltaPayload = {
                     delta: true, // Explicit delta flag to ensure backend uses delta methods
                     ...payload
                 };
-                response = await axios.put(`${API_URL}/api/shifts/${existingShiftId}`, deltaPayload);
+                response = await axios.put(`${API_URL}/api/shifts/${shiftId}`, deltaPayload);
             } else {
                 // Create new shift
+                console.log('Creating new shift');
                 response = await axios.post(`${API_URL}/api/shifts`, payload);
             }
             
             showSuccessBanner(
-                editMode 
-                    ? `Shift data updated successfully! Shift ID: ${existingShiftId || response.data.shiftId}. ` +
+                (editMode || shiftId)
+                    ? `Shift data updated successfully! Shift ID: ${shiftId || response.data.shiftId}. ` +
                       `Expected Cash: ${formatMoney(totals.expectedCash)}`
                     : `Shift data saved successfully! Shift ID: ${response.data.shiftId}. ` +
                       `Expected Cash: ${formatMoney(totals.expectedCash)}`
