@@ -253,7 +253,7 @@ const DashboardOverviewView = ({ formatMoney, formatDate, onNavigateToTab }) => 
             const salesTrendResponse = await axios.get(`${API_URL}/api/dashboard/sales-trend`, {
                 params: {
                     date: currentDate,
-                    numberOfDays: 7
+                    numberOfDays: 15
                 }
             });
 
@@ -323,7 +323,7 @@ const DashboardOverviewView = ({ formatMoney, formatDate, onNavigateToTab }) => 
             {/* Sales Trend Chart - Full Width */}
             <div className="card p-6 mb-8">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-gray-700">Sales Trend (Last 7 Days)</h2>
+                    <h2 className="text-xl font-bold text-gray-700">Sales Trend (Last 15 Days)</h2>
                     <div className="flex items-center bg-gray-100 p-1 rounded-lg">
                         <button 
                             className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
