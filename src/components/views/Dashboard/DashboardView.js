@@ -93,7 +93,7 @@ const DashboardView = () => {
 
 // Dashboard Overview Sub-Component
 const DashboardOverviewView = ({ formatMoney, formatDate, onNavigateToTab }) => {
-    const [activeChartTab, setActiveChartTab] = useState('amount');
+    const [activeChartTab, setActiveChartTab] = useState('litre');
     const [dashboardData, setDashboardData] = useState({
         summary: null,
         salesTrend: null
@@ -327,16 +327,6 @@ const DashboardOverviewView = ({ formatMoney, formatDate, onNavigateToTab }) => 
                     <div className="flex items-center bg-gray-100 p-1 rounded-lg">
                         <button 
                             className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                                activeChartTab === 'amount' 
-                                    ? 'bg-indigo-50 text-indigo-600' 
-                                    : 'text-gray-600 hover:text-gray-800'
-                            }`}
-                            onClick={() => setActiveChartTab('amount')}
-                        >
-                            Amount Trend (₹)
-                        </button>
-                        <button 
-                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                                 activeChartTab === 'litre' 
                                     ? 'bg-indigo-50 text-indigo-600' 
                                     : 'text-gray-600 hover:text-gray-800'
@@ -344,6 +334,16 @@ const DashboardOverviewView = ({ formatMoney, formatDate, onNavigateToTab }) => 
                             onClick={() => setActiveChartTab('litre')}
                         >
                             Volume Trend (Ltr)
+                        </button>
+                        <button 
+                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                                activeChartTab === 'amount' 
+                                    ? 'bg-indigo-50 text-indigo-600' 
+                                    : 'text-gray-600 hover:text-gray-800'
+                            }`}
+                            onClick={() => setActiveChartTab('amount')}
+                        >
+                            Amount Trend (₹)
                         </button>
                     </div>
                 </div>
