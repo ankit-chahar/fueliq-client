@@ -750,7 +750,7 @@ const SettingsView = ({ showSuccessBanner }) => {
                 <div className="flex-1 w-full md:w-auto">
                     {activeSection === 'general' && (
                         <SettingsCard
-                            title="Pump Information"
+                            title="Station Information"
                             isEditing={editingSection === 'general'}
                             onEdit={() => handleEdit('general')}
                             onSave={() => handleSave('general')}
@@ -758,15 +758,15 @@ const SettingsView = ({ showSuccessBanner }) => {
                         >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="pump-name" className="block text-sm font-medium text-gray-700">Pump Name *</label>
+                                    <label htmlFor="station-name" className="block text-sm font-medium text-gray-700">Station Name *</label>
                                     <input
                                         type="text"
-                                        id="pump-name"
+                                        id="station-name"
                                         className="input-field mt-1"
-                                        value={settings.general?.pumpName || ''}
+                                        value={settings.general?.stationName || settings.general?.pumpName || ''}
                                         onChange={(e) => setSettings(prev => ({
                                             ...prev,
-                                            general: { ...prev.general, pumpName: e.target.value }
+                                            general: { ...prev.general, stationName: e.target.value }
                                         }))}
                                         disabled={editingSection !== 'general'}
                                         required
@@ -774,186 +774,50 @@ const SettingsView = ({ showSuccessBanner }) => {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="owner-name" className="block text-sm font-medium text-gray-700">Owner Name</label>
+                                    <label htmlFor="station-code" className="block text-sm font-medium text-gray-700">Station Code</label>
                                     <input
                                         type="text"
-                                        id="owner-name"
-                                        className="input-field mt-1"
-                                        value={settings.general?.ownerName || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, ownerName: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
+                                        id="station-code"
+                                        className="input-field mt-1 bg-gray-100"
+                                        value={settings.general?.stationCode || 'MAIN001'}
+                                        disabled={true}
+                                        readOnly
+                                        title="Station code cannot be changed"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+                                    <div className="mt-1">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                            settings.general?.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                        }`}>
+                                            {settings.general?.isActive !== false ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="created-date" className="block text-sm font-medium text-gray-700">Created Date</label>
+                                    <input
+                                        type="text"
+                                        id="created-date"
+                                        className="input-field mt-1 bg-gray-100"
+                                        value={settings.general?.createdAt ? new Date(settings.general.createdAt).toLocaleDateString() : 'N/A'}
+                                        disabled={true}
+                                        readOnly
                                     />
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <label htmlFor="address" className="block text-sm font-medium text-gray-700">Address</label>
-                                    <textarea
-                                        id="address"
-                                        rows="3"
-                                        className="input-field mt-1"
-                                        value={settings.general?.address || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, address: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
+                                    <label htmlFor="last-updated" className="block text-sm font-medium text-gray-700">Last Updated</label>
                                     <input
                                         type="text"
-                                        id="city"
-                                        className="input-field mt-1"
-                                        value={settings.general?.city || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, city: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="state" className="block text-sm font-medium text-gray-700">State</label>
-                                    <input
-                                        type="text"
-                                        id="state"
-                                        className="input-field mt-1"
-                                        value={settings.general?.state || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, state: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="pincode" className="block text-sm font-medium text-gray-700">PIN Code</label>
-                                    <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        pattern="[0-9]*"
-                                        id="pincode"
-                                        className="input-field mt-1"
-                                        value={settings.general?.pincode || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, pincode: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        id="phone"
-                                        className="input-field mt-1"
-                                        value={settings.general?.phone || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, phone: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                                    <input
-                                        type="email"
-                                        id="email"
-                                        className="input-field mt-1"
-                                        value={settings.general?.email || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, email: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="license-number" className="block text-sm font-medium text-gray-700">License Number</label>
-                                    <input
-                                        type="text"
-                                        id="license-number"
-                                        className="input-field mt-1"
-                                        value={settings.general?.licenseNumber || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, licenseNumber: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="gst-number" className="block text-sm font-medium text-gray-700">GST Number</label>
-                                    <input
-                                        type="text"
-                                        id="gst-number"
-                                        className="input-field mt-1"
-                                        value={settings.general?.gstNumber || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, gstNumber: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="established-date" className="block text-sm font-medium text-gray-700">Established Date</label>
-                                    <input
-                                        type="date"
-                                        id="established-date"
-                                        className="input-field mt-1"
-                                        value={settings.general?.establishedDate || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, establishedDate: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="website" className="block text-sm font-medium text-gray-700">Website</label>
-                                    <input
-                                        type="url"
-                                        id="website"
-                                        className="input-field mt-1"
-                                        value={settings.general?.website || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, website: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                        placeholder="https://example.com"
-                                    />
-                                </div>
-
-                                <div className="md:col-span-2">
-                                    <label htmlFor="operating-hours" className="block text-sm font-medium text-gray-700">Operating Hours</label>
-                                    <input
-                                        type="text"
-                                        id="operating-hours"
-                                        className="input-field mt-1"
-                                        value={settings.general?.operatingHours || ''}
-                                        onChange={(e) => setSettings(prev => ({
-                                            ...prev,
-                                            general: { ...prev.general, operatingHours: e.target.value }
-                                        }))}
-                                        disabled={editingSection !== 'general'}
-                                        placeholder="e.g., 24 Hours, 6:00 AM - 10:00 PM"
+                                        id="last-updated"
+                                        className="input-field mt-1 bg-gray-100"
+                                        value={settings.general?.updatedAt ? new Date(settings.general.updatedAt).toLocaleString() : 'N/A'}
+                                        disabled={true}
+                                        readOnly
                                     />
                                 </div>
                             </div>
