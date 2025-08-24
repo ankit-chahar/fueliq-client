@@ -15,11 +15,7 @@ const Header = ({ pumpName, onNavigate }) => {
 
     const toggleUserMenu = (e) => {
         if (e) e.stopPropagation();
-        setIsUserMenuOpen(prev => {
-            const next = !prev;
-            if (process.env.NODE_ENV !== 'production') console.log('User menu open:', next);
-            return next;
-        });
+        setIsUserMenuOpen(prev => !prev);
     };
 
     const closeUserMenu = () => {

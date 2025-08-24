@@ -258,8 +258,10 @@ const SettingsView = ({ showSuccessBanner }) => {
         
         switch (sectionName) {
             case 'general':
-                if (settings.general?.pumpName !== originalSectionState?.pumpName) {
-                    changelog.push(`Pump Name will be changed to "${settings.general?.pumpName}".`);
+                const currentStationName = settings.general?.stationName || settings.general?.pumpName;
+                const originalStationName = originalSectionState?.stationName || originalSectionState?.pumpName;
+                if (currentStationName !== originalStationName) {
+                    changelog.push(`Station Name will be changed to "${currentStationName}".`);
                 }
                 break;
                 
