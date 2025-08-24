@@ -14,6 +14,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [stationInfo, setStationInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -38,6 +39,11 @@ export const AuthProvider = ({ children }) => {
             
             if (response.data.success) {
                 setUser(response.data.data.user);
+                setStationInfo({
+                    id: response.data.data.user.station_id,
+                    name: response.data.data.user.station_name || 'Station',
+                    code: response.data.data.user.station_code || 'UNKNOWN'
+                });
                 setIsAuthenticated(true);
             } else {
                 // Token is invalid, clear it
@@ -70,6 +76,11 @@ export const AuthProvider = ({ children }) => {
                 
                 // Update state
                 setUser(user);
+                setStationInfo({
+                    id: user.station_id,
+                    name: user.station_name || 'Station',
+                    code: user.station_code || 'UNKNOWN'
+                });
                 setIsAuthenticated(true);
                 
                 return { success: true };
@@ -105,6 +116,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('refreshToken');
         delete axios.defaults.headers.common['Authorization'];
         setUser(null);
+        setStationInfo(null);
         setIsAuthenticated(false);
     };
 
@@ -165,6 +177,7 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
+        stationInfo,
         isAuthenticated,
         loading,
         login,

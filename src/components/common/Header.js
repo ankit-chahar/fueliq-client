@@ -5,10 +5,13 @@ import { useAuth } from '../../contexts/AuthContext';
 const Header = ({ pumpName, onNavigate }) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false); // new state for mobile collapsible panel
-    const { user, logout } = useAuth();
+    const { user, stationInfo, logout } = useAuth();
     const avatarBtnRef = useRef(null);
     const menuRef = useRef(null);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
+
+    // Use station info from auth context, fallback to prop
+    const displayStationName = stationInfo?.name || pumpName || 'Chahar Filling Station';
 
     const toggleUserMenu = (e) => {
         if (e) e.stopPropagation();
@@ -130,15 +133,15 @@ const Header = ({ pumpName, onNavigate }) => {
                     {/* Right: Actions */}
                     <div className="flex items-center gap-1 sm:gap-2">
                         {/* Station badge (hide on very small; show md+) */}
-                        <div className="hidden md:flex items-center bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100 max-w-xs">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        <div className="hidden md:flex items-center bg-blue-50 px-3 py-1 rounded-lg border">
+                            <div className="flex flex-col items-start">
                                 <span className="text-xs font-medium text-gray-600">Station</span>
-                                <span className="text-xs font-semibold text-blue-800 font-poppins truncate">{pumpName || 'Chahar Filling Station'}</span>
+                                <span className="text-xs font-semibold text-blue-800 font-poppins truncate">{displayStationName}</span>
+                                {stationInfo?.code && (
+                                    <span className="text-xs text-gray-500">Code: {stationInfo.code}</span>
+                                )}
                             </div>
-                        </div>
-
-                        {/* Optional icons hidden on xs */}
+                        </div>                        {/* Optional icons hidden on xs */}
                         <div className="hidden sm:flex items-center">
                             <button className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-ring-blue">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -176,7 +179,7 @@ const Header = ({ pumpName, onNavigate }) => {
                         {/* Station & status */}
                         <div className="flex items-center gap-2 px-1">
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            <span className="text-sm font-semibold text-blue-800 truncate">{pumpName || 'Chahar Filling Station'}</span>
+                            <span className="text-sm font-semibold text-blue-800 truncate">{displayStationName}</span>
                         </div>
                         {/* Search (mobile) */}
                         <div className="px-1">
@@ -220,7 +223,7 @@ const Header = ({ pumpName, onNavigate }) => {
                         </div>
                         <div className="py-1" role="none">
                             <button className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" role="menuitem">
-                                <span>{pumpName || 'Chahar Filling Station'}</span>
+                                <span>{displayStationName}</span>
                                 <svg className="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                             </button>
                             <button className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" role="menuitem">Switch Station</button>
