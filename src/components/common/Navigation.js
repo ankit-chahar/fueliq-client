@@ -6,6 +6,7 @@ const Navigation = ({ currentView, setView }) => {
         { id: 'shift-entry', label: 'Shift Entry', icon: 'fa-clipboard-list' },
         { id: 'history', label: 'Historical Data', icon: 'fa-history' },
         { id: 'settings', label: 'Settings', icon: 'fa-cog' },
+        { id: 'admin-settings', label: 'Admin Settings', icon: 'fa-users-cog' },
     ];
     
     return (

@@ -19,6 +19,7 @@ import {
     DashboardView,
     SettingsView,
     ChangePasswordView,
+    AdminSettingsView,
     ProtectedRoute
 } from './components';
 
@@ -64,6 +65,8 @@ function AppContent() {
                 return <ShiftEntryView showSuccessBanner={showSuccessBanner} />;
             case 'settings':
                 return <SettingsView showSuccessBanner={showSuccessBanner} />;
+            case 'admin-settings':
+                return <AdminSettingsView showSuccessBanner={showSuccessBanner} />;
             case 'history':
                 return <HistoricalDataView showSuccessBanner={showSuccessBanner} />;
             case 'change-password':

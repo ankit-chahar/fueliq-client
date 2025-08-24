@@ -3,3 +3,4 @@ export { default as HistoricalDataView } from './HistoricalData/HistoricalDataVi
 export { default as DashboardView } from './Dashboard/DashboardView';
 export { default as SettingsView } from './Settings/SettingsView';
 export { default as ChangePasswordView } from './ChangePassword/ChangePasswordView';
+export { AdminSettingsView } from './AdminSettings';
