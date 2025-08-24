@@ -137,9 +137,6 @@ const Header = ({ pumpName, onNavigate }) => {
                             <div className="flex flex-col items-start">
                                 <span className="text-xs font-medium text-gray-600">Station</span>
                                 <span className="text-xs font-semibold text-blue-800 font-poppins truncate">{displayStationName}</span>
-                                {stationInfo?.code && (
-                                    <span className="text-xs text-gray-500">Code: {stationInfo.code}</span>
-                                )}
                             </div>
                         </div>                        {/* Optional icons hidden on xs */}
                         <div className="hidden sm:flex items-center">
