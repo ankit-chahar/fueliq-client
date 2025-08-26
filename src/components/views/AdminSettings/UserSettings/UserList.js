@@ -12,7 +12,6 @@ const UserList = ({ station, onEdit, showSuccessBanner }) => {
         
         setIsLoading(true);
         try {
-            // TODO: Replace with actual API call when backend is ready
             const response = await axios.get(`${API_URL}/api/users?stationId=${station.id}`);
             
             if (response.data.success) {
@@ -23,30 +22,8 @@ const UserList = ({ station, onEdit, showSuccessBanner }) => {
         } catch (error) {
             console.error('Error fetching users:', error);
             
-            // Provide fallback data for development
-            const fallbackUsers = [
-                {
-                    id: '1',
-                    username: 'admin',
-                    full_name: 'Administrator',
-                    email: 'admin@example.com',
-                    role: 'admin',
-                    station_id: station.id,
-                    is_active: true,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: '2',
-                    username: 'operator1',
-                    full_name: 'John Operator',
-                    email: 'john@example.com',
-                    role: 'operator',
-                    station_id: station.id,
-                    is_active: true,
-                    created_at: new Date().toISOString()
-                }
-            ];
-            setUsers(fallbackUsers);
+            // Don't use fallback data - let the user create real users through the API
+            setUsers([]);
         } finally {
             setIsLoading(false);
         }
@@ -64,7 +41,6 @@ const UserList = ({ station, onEdit, showSuccessBanner }) => {
         setIsDeleting(user.id);
         
         try {
-            // TODO: Replace with actual API call when backend is ready
             const response = await axios.delete(`${API_URL}/api/users/${user.id}`);
             
             if (response.data.success) {
@@ -83,7 +59,6 @@ const UserList = ({ station, onEdit, showSuccessBanner }) => {
 
     const toggleUserStatus = async (user) => {
         try {
-            // TODO: Replace with actual API call when backend is ready
             const response = await axios.put(`${API_URL}/api/users/${user.id}`, {
                 ...user,
                 is_active: !user.is_active
@@ -143,14 +118,7 @@ const UserList = ({ station, onEdit, showSuccessBanner }) => {
             <div className="text-center py-12 bg-gray-50 rounded-lg">
                 <i className="fas fa-user-plus text-5xl text-gray-300 mb-4"></i>
                 <h3 className="text-lg font-medium text-gray-700 mb-2">No users found</h3>
-                <p className="text-gray-500 mb-4">Add your first user for {station.name}</p>
-                <button
-                    onClick={() => window.dispatchEvent(new CustomEvent('add-user'))}
-                    className="btn btn-primary"
-                >
-                    <i className="fas fa-plus mr-2"></i>
-                    Add First User
-                </button>
+                <p className="text-gray-500">Add your first user for {station.name}</p>
             </div>
         );
     }

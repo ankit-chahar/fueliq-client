@@ -13,7 +13,6 @@ const StationList = ({ stations, onEdit, onStationsUpdate, showSuccessBanner }) 
         setIsDeleting(station.id);
         
         try {
-            // TODO: Replace with actual API call when backend is ready
             const response = await axios.delete(`${API_URL}/api/stations/${station.id}`);
             
             if (response.data.success) {
@@ -24,7 +23,15 @@ const StationList = ({ stations, onEdit, onStationsUpdate, showSuccessBanner }) 
             }
         } catch (error) {
             console.error('Error deleting station:', error);
-            alert('Failed to delete station. Please try again.');
+            
+            let errorMessage = 'Failed to delete station. Please try again.';
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            alert(errorMessage);
         } finally {
             setIsDeleting(null);
         }
@@ -32,7 +39,6 @@ const StationList = ({ stations, onEdit, onStationsUpdate, showSuccessBanner }) 
 
     const toggleStationStatus = async (station) => {
         try {
-            // TODO: Replace with actual API call when backend is ready
             const response = await axios.put(`${API_URL}/api/stations/${station.id}`, {
                 ...station,
                 is_active: !station.is_active

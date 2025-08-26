@@ -17,8 +17,6 @@ const AdminSettingsView = ({ showSuccessBanner }) => {
         setError(null);
         
         try {
-            // For now, we'll use the existing stations endpoint or create mock data
-            // TODO: Replace with actual API call when backend is ready
             const response = await axios.get(`${API_URL}/api/stations/all`);
             
             if (response.data.success) {
@@ -31,18 +29,8 @@ const AdminSettingsView = ({ showSuccessBanner }) => {
             const errorMsg = error.response?.data?.message || error.message || 'Failed to load stations';
             setError(errorMsg);
             
-            // Provide fallback data for development
-            const fallbackStations = [
-                {
-                    id: '1',
-                    station_code: 'MAIN001',
-                    name: 'Main Station',
-                    is_active: true,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }
-            ];
-            setStations(fallbackStations);
+            // Don't use fallback data - let users work with real API data
+            setStations([]);
         } finally {
             setIsLoading(false);
         }

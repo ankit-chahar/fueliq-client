@@ -56,7 +56,6 @@ const StationForm = ({ station, onClose, onSave }) => {
             
             const method = station ? 'put' : 'post';
             
-            // TODO: Replace with actual API call when backend is ready
             const response = await axios[method](url, formData);
             
             if (response.data.success) {
