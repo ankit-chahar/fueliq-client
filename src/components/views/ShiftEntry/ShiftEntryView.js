@@ -430,15 +430,20 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
     // Function to fetch previous shift readings
     const fetchPreviousShiftReadings = useCallback(async (date, shiftType) => {
         try {
+            console.log('Fetching previous shift readings for:', { date, shiftType });
             setLoadingPreviousReadings(true);
             const response = await axios.get(
                 `${API_URL}/api/shifts/previous-readings/${date}/${shiftType}`
             );
             
+            console.log('Previous readings API response:', response.data);
+            
             if (response.data.success && response.data.data.exists) {
+                console.log('Previous readings found:', response.data.data.readings);
                 setPreviousReadings(response.data.data.readings);
                 return response.data.data.readings;
             } else {
+                console.log('No previous readings found');
                 setPreviousReadings(null);
                 return null;
             }
@@ -453,20 +458,43 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
 
     // Function to auto-populate opening readings from previous shift
     const autoPopulateOpeningReadings = useCallback(async () => {
+        console.log('autoPopulateOpeningReadings called with:', {
+            shiftDate: shiftData.shiftDate,
+            shiftType: shiftData.shiftType,
+            fuelTypesLength: fuelTypes.length,
+            fuelEntriesLength: shiftData.fuelEntries.length
+        });
+        
         if (!shiftData.shiftDate || !shiftData.shiftType || fuelTypes.length === 0) {
+            console.log('Skipping auto-populate: missing required data');
             return;
         }
 
         const readings = await fetchPreviousShiftReadings(shiftData.shiftDate, shiftData.shiftType);
         
+        console.log('Fetched readings for auto-populate:', readings);
+        
         if (readings && Object.keys(readings).length > 0) {
+            console.log('Auto-populating with readings:', readings);
             const newAutoPopulatedFields = new Set();
             
             setShiftData(prev => ({
                 ...prev,
                 fuelEntries: prev.fuelEntries.map(entry => {
-                    const fuelReadings = readings[entry.fuelType];
+                    // Find the fuel info to get the fuel code
+                    const fuelInfo = fuelTypes.find(f => f.id === entry.fuelType);
+                    const fuelCode = fuelInfo?.fuel_code?.toLowerCase();
+                    
+                    console.log('Looking for readings for fuel:', {
+                        entryFuelType: entry.fuelType,
+                        fuelInfo: fuelInfo,
+                        fuelCode: fuelCode,
+                        availableReadings: Object.keys(readings)
+                    });
+                    
+                    const fuelReadings = fuelCode ? readings[fuelCode] : null;
                     if (fuelReadings) {
+                        console.log('Found readings for fuel code', fuelCode, ':', fuelReadings);
                         const updatedOpeningReadings = [...entry.openingReadings];
                         
                         // Auto-populate each nozzle reading
@@ -476,10 +504,13 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                 updatedOpeningReadings[nozzleIndex] = fuelReadings[nozzleKey].toString();
                                 // Mark this field as auto-populated
                                 newAutoPopulatedFields.add(`${entry.id}_opening_${nozzleIndex}`);
+                                console.log(`Auto-populated ${fuelCode} ${nozzleKey}:`, fuelReadings[nozzleKey]);
                             }
                         });
                         
                         return { ...entry, openingReadings: updatedOpeningReadings };
+                    } else {
+                        console.log('No readings found for fuel code:', fuelCode);
                     }
                     return entry;
                 })
@@ -511,8 +542,18 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
 
     // Auto-populate opening readings when date, shift type changes, or fuel entries are initialized
     useEffect(() => {
+        console.log('Auto-populate useEffect triggered:', {
+            fuelTypesLength: fuelTypes.length,
+            fuelEntriesLength: shiftData.fuelEntries.length,
+            shiftDate: shiftData.shiftDate,
+            shiftType: shiftData.shiftType
+        });
+        
         if (fuelTypes.length > 0 && shiftData.fuelEntries.length > 0) {
+            console.log('Calling autoPopulateOpeningReadings...');
             autoPopulateOpeningReadings();
+        } else {
+            console.log('Skipping auto-populate: conditions not met');
         }
     }, [shiftData.shiftDate, shiftData.shiftType, fuelTypes.length, autoPopulateOpeningReadings]);
 
