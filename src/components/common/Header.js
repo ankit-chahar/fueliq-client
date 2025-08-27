@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const Header = ({ pumpName, onNavigate }) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false); // new state for mobile collapsible panel
-    const { user, stationInfo, logout } = useAuth();
+    const { user, stationInfo, logout, isAdmin, getAllowedViews } = useAuth();
     const avatarBtnRef = useRef(null);
     const menuRef = useRef(null);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
@@ -189,14 +189,18 @@ const Header = ({ pumpName, onNavigate }) => {
                         </div>
                         {/* Quick actions placeholder (future) */}
                         <div className="flex gap-2 px-1">
-                            <button
-                                onClick={() => { setIsMobilePanelOpen(false); onNavigate && onNavigate('dashboard'); }}
-                                className="flex-1 py-2 text-xs font-medium bg-blue-600 text-white rounded-md shadow hover:bg-blue-700"
-                            >Dashboard</button>
-                            <button
-                                onClick={() => { setIsMobilePanelOpen(false); onNavigate && onNavigate('shift-entry'); }}
-                                className="flex-1 py-2 text-xs font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                            >Shift</button>
+                            {getAllowedViews().includes('dashboard') && (
+                                <button
+                                    onClick={() => { setIsMobilePanelOpen(false); onNavigate && onNavigate('dashboard'); }}
+                                    className="flex-1 py-2 text-xs font-medium bg-blue-600 text-white rounded-md shadow hover:bg-blue-700"
+                                >Dashboard</button>
+                            )}
+                            {getAllowedViews().includes('shift-entry') && (
+                                <button
+                                    onClick={() => { setIsMobilePanelOpen(false); onNavigate && onNavigate('shift-entry'); }}
+                                    className="flex-1 py-2 text-xs font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                                >Shift</button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -219,7 +223,9 @@ const Header = ({ pumpName, onNavigate }) => {
                                 <span>{displayStationName}</span>
                                 <svg className="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                             </button>
-                            <button className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" role="menuitem">Switch Station</button>
+                            {isAdmin() && (
+                                <button className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" role="menuitem">Switch Station</button>
+                            )}
                             <button
                                 className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
                                 role="menuitem"

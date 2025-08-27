@@ -2,8 +2,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_URL } from '../../../constants/api';
 import { SearchableCreditorInput } from '../../common';
+import { RoleGate, AccessDenied } from '../../common/RoleGate';
 
 const SettingsView = ({ showSuccessBanner }) => {
+    return (
+        <RoleGate 
+            allowedRoles={['manager']} 
+            fallback={<AccessDenied message="Only managers can access the Settings page." />}
+        >
+            <SettingsContent showSuccessBanner={showSuccessBanner} />
+        </RoleGate>
+    );
+};
+
+const SettingsContent = ({ showSuccessBanner }) => {
     const [settings, setSettings] = useState(null);
     const [editingSection, setEditingSection] = useState(null);
     const [originalSectionState, setOriginalSectionState] = useState(null);

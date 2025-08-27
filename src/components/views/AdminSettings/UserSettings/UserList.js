@@ -84,6 +84,8 @@ const UserList = ({ station, onEdit, showSuccessBanner }) => {
                 return 'bg-yellow-100 text-yellow-800';
             case 'operator':
                 return 'bg-blue-100 text-blue-800';
+            case 'viewer':
+                return 'bg-green-100 text-green-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -97,6 +99,8 @@ const UserList = ({ station, onEdit, showSuccessBanner }) => {
                 return 'fa-user-tie';
             case 'operator':
                 return 'fa-user';
+            case 'viewer':
+                return 'fa-eye';
             default:
                 return 'fa-user';
         }

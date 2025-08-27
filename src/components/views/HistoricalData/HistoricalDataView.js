@@ -9,8 +9,20 @@ import {
     LubeSalesHistoryContent, 
     ExpensesHistoryContent 
 } from './contentComponents';
+import { RoleGate, AccessDenied } from '../../common/RoleGate';
 
 const HistoricalDataView = ({ showSuccessBanner }) => {
+    return (
+        <RoleGate 
+            allowedRoles={['manager']} 
+            fallback={<AccessDenied message="Only managers can access the Historical Data page." />}
+        >
+            <HistoricalDataContent showSuccessBanner={showSuccessBanner} />
+        </RoleGate>
+    );
+};
+
+const HistoricalDataContent = ({ showSuccessBanner }) => {
     const [activeSection, setActiveSection] = useState('shifts');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);

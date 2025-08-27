@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../constants';
+import { getAllowedViews, getDefaultView, canAccessView } from '../constants/rolePermissions';
 
 const AuthContext = createContext();
 
@@ -183,7 +184,15 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         refreshToken,
-        checkAuthStatus
+        checkAuthStatus,
+        // Role helper methods
+        isAdmin: () => user?.role === 'admin',
+        isManager: () => user?.role === 'manager',
+        isOperator: () => user?.role === 'operator',
+        isViewer: () => user?.role === 'viewer',
+        getAllowedViews: () => getAllowedViews(user?.role),
+        getDefaultView: () => getDefaultView(user?.role),
+        canAccessView: (view) => canAccessView(user?.role, view)
     };
 
     return (

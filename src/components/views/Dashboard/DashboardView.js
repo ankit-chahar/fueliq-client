@@ -3,11 +3,23 @@ import axios from 'axios';
 import { formatMoney } from '../../../utils';
 import { API_URL } from '../../../constants';
 import { Chart, registerables } from 'chart.js';
+import { RoleGate, AccessDenied } from '../../common/RoleGate';
 
 // Register Chart.js components
 Chart.register(...registerables);
 
 const DashboardView = () => {
+    return (
+        <RoleGate 
+            allowedRoles={['viewer', 'manager']} 
+            fallback={<AccessDenied message="You don't have permission to access the Dashboard." />}
+        >
+            <DashboardContent />
+        </RoleGate>
+    );
+};
+
+const DashboardContent = () => {
     const [activeDashboardTab, setActiveDashboardTab] = useState('overview');
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 

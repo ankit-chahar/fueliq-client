@@ -6,7 +6,7 @@ import './index.css';
 import { API_URL } from './constants';
 
 // Import auth context
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Import components
 import {
@@ -23,6 +23,8 @@ import {
     ProtectedRoute
 } from './components';
 
+import { AccessDenied } from './components/common/RoleGate';
+
 // --- Main App Component ---
 function App() {
     return (
@@ -34,14 +36,34 @@ function App() {
 
 // Main App Content Component (wrapped by AuthProvider)
 function AppContent() {
+    const { canAccessView, getDefaultView, user } = useAuth();
     const [view, setView] = useState('dashboard');
     const [successMessage, setSuccessMessage] = useState('');
+
+    // Set initial view based on user role when user is loaded
+    useEffect(() => {
+        if (user) {
+            const defaultView = getDefaultView();
+            setView(defaultView);
+        }
+    }, [user, getDefaultView]);
 
     const showSuccessBanner = (message) => {
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(''), 3000);
         // Scroll to top to make banner visible
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Enhanced setView with permission checking
+    const handleSetView = (newView) => {
+        if (canAccessView(newView)) {
+            setView(newView);
+        } else {
+            // Redirect to default view if trying to access unauthorized view
+            const defaultView = getDefaultView();
+            setView(defaultView);
+        }
     };
 
     useEffect(() => {
@@ -60,6 +82,11 @@ function AppContent() {
     }, []);
 
     const renderView = () => {
+        // Check if user can access the current view
+        if (!canAccessView(view)) {
+            return <AccessDenied message="You don't have permission to access this page. You've been redirected to your default view." />;
+        }
+
         switch (view) {
             case 'shift-entry':
                 return <ShiftEntryView showSuccessBanner={showSuccessBanner} />;
@@ -74,7 +101,12 @@ function AppContent() {
             case 'dashboard':
                 return <DashboardView />;
             default:
-                return <div className="p-6 card">View not found</div>;
+                // If view not found, redirect to default view
+                const defaultView = getDefaultView();
+                if (view !== defaultView) {
+                    setView(defaultView);
+                }
+                return <div className="p-6 card">Loading...</div>;
         }
     };
 
@@ -84,9 +116,9 @@ function AppContent() {
                 {successMessage && <SuccessBanner message={successMessage} />}
                 <Header 
                     pumpName="FueliQ Petrol Pump" 
-                    onNavigate={setView}
+                    onNavigate={handleSetView}
                 />
-                <Navigation currentView={view} setView={setView} />
+                <Navigation currentView={view} setView={handleSetView} />
                 <main>{renderView()}</main>
                 <ConfirmationModal />
             </div>

@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_URL } from '../../../constants/api';
+import { AdminOnly, AccessDenied } from '../../common/RoleGate';
 import StationSettings from './StationSettings';
 import UserSettings from './UserSettings';
 
 const AdminSettingsView = ({ showSuccessBanner }) => {
+    return (
+        <AdminOnly fallback={<AccessDenied message="Only administrators can access the Admin Settings." />}>
+            <AdminSettingsContent showSuccessBanner={showSuccessBanner} />
+        </AdminOnly>
+    );
+};
+
+const AdminSettingsContent = ({ showSuccessBanner }) => {
     const [activeSection, setActiveSection] = useState('stations');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [stations, setStations] = useState([]);

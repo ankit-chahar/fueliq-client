@@ -4,8 +4,25 @@ import { API_URL } from '../../../constants/api';
 import { formatMoney, formatLitre, generateId } from '../../../utils/formatters';
 import { calculateShiftTotals } from '../../../utils/calculationHelpers';
 import { SearchableCreditorInput } from '../../common';
+import { RoleGate, AccessDenied } from '../../common/RoleGate';
 
 const ShiftEntryView = ({ showSuccessBanner, editMode = false, initialShiftData = null, onUpdateSuccess = null }) => {
+    return (
+        <RoleGate 
+            allowedRoles={['operator', 'manager']} 
+            fallback={<AccessDenied message="Only operators and managers can access the Shift Entry page." />}
+        >
+            <ShiftEntryContent 
+                showSuccessBanner={showSuccessBanner}
+                editMode={editMode}
+                initialShiftData={initialShiftData}
+                onUpdateSuccess={onUpdateSuccess}
+            />
+        </RoleGate>
+    );
+};
+
+const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftData = null, onUpdateSuccess = null }) => {
     const [shiftData, setShiftData] = useState({
         shiftDate: new Date().toISOString().split('T')[0],
         shiftType: 'morning',

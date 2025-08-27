@@ -19,7 +19,8 @@ const UserForm = ({ user, station, onClose, onSave }) => {
     const roles = [
         { value: 'operator', label: 'Operator' },
         { value: 'manager', label: 'Manager' },
-        { value: 'admin', label: 'Admin' }
+        { value: 'admin', label: 'Admin' },
+        { value: 'viewer', label: 'Viewer' }
     ];
 
     useEffect(() => {
