@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { generateInitials } from '../../utils/formatters';
 
 const Header = ({ pumpName, onNavigate }) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -12,6 +13,9 @@ const Header = ({ pumpName, onNavigate }) => {
 
     // Use station info from auth context, fallback to prop
     const displayStationName = stationInfo?.name || pumpName || 'Chahar Filling Station';
+    
+    // Generate user initials from full name
+    const userInitials = generateInitials(user?.full_name);
 
     const toggleUserMenu = (e) => {
         if (e) e.stopPropagation();
@@ -157,7 +161,7 @@ const Header = ({ pumpName, onNavigate }) => {
                                 aria-controls="user-dropdown-menu"
                             >
                                 <span className="sr-only">Open user menu</span>
-                                <img className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover ring-2 ring-gray-200" src="https://placehold.co/100x100/E2E8F0/4A5568?text=A" alt="User avatar" />
+                                <img className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover ring-2 ring-gray-200" src={`https://placehold.co/100x100/E2E8F0/4A5568?text=${userInitials}`} alt="User avatar" />
                             </button>
                         </div>
                     </div>
