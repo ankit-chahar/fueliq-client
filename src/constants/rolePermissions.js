@@ -1,9 +1,9 @@
 // Role-based view access permissions
 export const ROLE_VIEWS = {
-    admin: ['admin-settings'],
-    manager: ['dashboard', 'shift-entry', 'history', 'settings'],
-    operator: ['shift-entry'],
-    viewer: ['dashboard']
+    admin: ['admin-settings', 'change-password'],
+    manager: ['dashboard', 'shift-entry', 'history', 'settings', 'change-password'],
+    operator: ['shift-entry', 'change-password'],
+    viewer: ['dashboard', 'change-password']
 };
 
 export const DEFAULT_VIEWS = {
