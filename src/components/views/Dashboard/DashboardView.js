@@ -923,7 +923,7 @@ const DashboardCreditorsView = ({ formatMoney }) => {
     return (
         <div>
             {/* High-Level Summary Cards */}
-            <div className={`grid grid-cols-1 md:grid-cols-${searchQuery ? '3' : '2'} gap-6 mb-8`}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="card p-6 text-center">
                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mx-auto mb-4">
                         <i className="fas fa-exclamation-triangle text-2xl text-red-600"></i>
@@ -936,35 +936,27 @@ const DashboardCreditorsView = ({ formatMoney }) => {
                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mx-auto mb-4">
                         <i className="fas fa-users text-2xl text-blue-600"></i>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-700">
-                        {searchQuery ? 'Filtered' : 'Active'} Creditors
-                    </h3>
+                    <h3 className="text-lg font-semibold text-gray-700">Active Creditors</h3>
                     <p className="text-3xl font-bold text-blue-600 mt-2">
-                        {searchQuery ? filteredCreditors.length : (creditorsData?.creditorsCount || 0)}
+                        {creditorsData?.activeCreditorsCount || 0}
                     </p>
                 </div>
 
-                {searchQuery && (
-                    <div className="card p-6 text-center">
-                        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mx-auto mb-4">
-                            <i className="fas fa-filter text-2xl text-green-600"></i>
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-700">Filtered Outstanding</h3>
-                        <p className="text-3xl font-bold text-green-600 mt-2">
-                            {formatMoney(filteredCreditors.reduce((sum, creditor) => sum + creditor.totalAmount, 0))}
-                        </p>
+                <div className="card p-6 text-center">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mx-auto mb-4">
+                        <i className="fas fa-check-circle text-2xl text-green-600"></i>
                     </div>
-                )}
+                    <h3 className="text-lg font-semibold text-gray-700">Settled Creditors</h3>
+                    <p className="text-3xl font-bold text-green-600 mt-2">
+                        {creditorsData?.settledCreditorsCount || 0}
+                    </p>
+                </div>
             </div>
 
-            {/* Detailed Creditor Table */}
-            <div className="card p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-700">Creditor Details</h2>
-                </div>
-
-                {/* Search Bar */}
-                <div className="mb-6">
+            {/* Search Bar */}
+            <div className="card p-6 mb-6">
+                <div className="mb-4">
+                    <h2 className="text-xl font-bold text-gray-700 mb-4">Search Creditors</h2>
                     <div className="relative max-w-md">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                             <i className="fas fa-search text-gray-400 text-sm"></i>
@@ -992,20 +984,45 @@ const DashboardCreditorsView = ({ formatMoney }) => {
                         </p>
                     )}
                 </div>
-                {filteredCreditors.length > 0 ? (
+            </div>
+
+            {/* Active Creditors Section */}
+            <div className="card p-6 mb-6">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-700">Active Creditors</h2>
+                        <p className="text-sm text-gray-500">Creditors with outstanding balances</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-lg font-semibold text-red-600">
+                            {searchQuery ? 
+                                filteredCreditors.filter(c => c.totalAmount > 0).length : 
+                                (creditorsData?.activeCreditors?.length || 0)} creditors
+                        </p>
+                        <p className="text-sm text-gray-500">
+                            Total: {formatMoney(
+                                searchQuery ? 
+                                    filteredCreditors.filter(c => c.totalAmount > 0).reduce((sum, c) => sum + c.totalAmount, 0) :
+                                    (creditorsData?.totalOutstanding || 0)
+                            )}
+                        </p>
+                    </div>
+                </div>
+
+                {(searchQuery ? filteredCreditors.filter(c => c.totalAmount > 0) : creditorsData?.activeCreditors || []).length > 0 ? (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-gray-200">
                                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Party Name</th>
-                                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Total Amount Due</th>
+                                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Amount Due</th>
                                     <th className="text-center py-3 px-4 font-semibold text-gray-700">Transactions</th>
                                     <th className="text-center py-3 px-4 font-semibold text-gray-700">Last Transaction</th>
                                     <th className="text-center py-3 px-4 font-semibold text-gray-700">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredCreditors.map((creditor, index) => (
+                                {(searchQuery ? filteredCreditors.filter(c => c.totalAmount > 0) : creditorsData?.activeCreditors || []).map((creditor, index) => (
                                     <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                                         <td className="py-3 px-4">
                                             <div>
@@ -1042,25 +1059,105 @@ const DashboardCreditorsView = ({ formatMoney }) => {
                             </tbody>
                         </table>
                     </div>
-                ) : searchQuery ? (
-                    <div className="text-center py-8">
-                        <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
-                        <p className="text-lg font-medium text-gray-500">No Creditors Found</p>
-                        <p className="text-sm text-gray-400">
-                            No creditors match your search for "{searchQuery}"
-                        </p>
-                        <button 
-                            onClick={() => setSearchQuery('')}
-                            className="btn btn-secondary mt-4"
-                        >
-                            Clear Search
-                        </button>
-                    </div>
                 ) : (
                     <div className="text-center py-8">
                         <i className="fas fa-users text-4xl text-gray-300 mb-4"></i>
-                        <p className="text-lg font-medium text-gray-500">No Active Creditors</p>
-                        <p className="text-sm text-gray-400">All outstanding credit has been cleared!</p>
+                        <p className="text-lg font-medium text-gray-500">
+                            {searchQuery ? 'No Active Creditors Found' : 'No Active Creditors'}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                            {searchQuery ? 
+                                `No active creditors match your search for "${searchQuery}"` :
+                                'All outstanding credit has been cleared!'
+                            }
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            {/* Settled Creditors Section */}
+            <div className="card p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-700">Settled Creditors</h2>
+                        <p className="text-sm text-gray-500">Creditors with fully cleared balances</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-lg font-semibold text-green-600">
+                            {searchQuery ? 
+                                filteredCreditors.filter(c => c.totalAmount === 0).length : 
+                                (creditorsData?.settledCreditors?.length || 0)} creditors
+                        </p>
+                        <p className="text-sm text-gray-500">All balances cleared</p>
+                    </div>
+                </div>
+
+                {(searchQuery ? filteredCreditors.filter(c => c.totalAmount === 0) : creditorsData?.settledCreditors || []).length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-gray-200">
+                                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Party Name</th>
+                                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Total Sales</th>
+                                    <th className="text-right py-3 px-4 font-semibold text-gray-700">Collections</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Transactions</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Last Transaction</th>
+                                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(searchQuery ? filteredCreditors.filter(c => c.totalAmount === 0) : creditorsData?.settledCreditors || []).map((creditor, index) => (
+                                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                                        <td className="py-3 px-4">
+                                            <div>
+                                                <span className="font-medium text-gray-800">{creditor.name}</span>
+                                                <p className="text-xs text-gray-500">
+                                                    Since: {new Date(creditor.firstTransactionDate).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </td>
+                                        <td className="py-3 px-4 text-right">
+                                            <span className="font-medium text-blue-600">{formatMoney(creditor.totalCreditSale)}</span>
+                                        </td>
+                                        <td className="py-3 px-4 text-right">
+                                            <span className="font-medium text-green-600">{formatMoney(creditor.totalCreditCollection)}</span>
+                                        </td>
+                                        <td className="py-3 px-4 text-center">
+                                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                {creditor.transactionCount}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 px-4 text-center text-gray-600">
+                                            {new Date(creditor.lastTransactionDate).toLocaleDateString()}
+                                        </td>
+                                        <td className="py-3 px-4 text-center">
+                                            <button 
+                                                className="btn btn-secondary text-xs px-3 py-1"
+                                                onClick={async () => {
+                                                    setSelectedCreditor(creditor);
+                                                    await fetchTransactionHistory(creditor.name);
+                                                }}
+                                            >
+                                                View History
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="text-center py-8">
+                        <i className="fas fa-check-circle text-4xl text-gray-300 mb-4"></i>
+                        <p className="text-lg font-medium text-gray-500">
+                            {searchQuery ? 'No Settled Creditors Found' : 'No Settled Creditors'}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                            {searchQuery ? 
+                                `No settled creditors match your search for "${searchQuery}"` :
+                                'No creditors have been fully settled yet.'
+                            }
+                        </p>
                     </div>
                 )}
             </div>
