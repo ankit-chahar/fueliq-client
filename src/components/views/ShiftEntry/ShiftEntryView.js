@@ -1419,10 +1419,10 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 className="input-field bg-white"
                                             />
                                         </div>
-                                        <div className="col-span-6 md:col-span-3">
+                                        <div className="col-span-6 md:col-span-4">
                                             <select 
                                                 className={getInputClassName('input-field', 
-                                                    sale.category && !validationErrors[`credit_${sale.id}_category`])}
+                                                    !validationErrors[`credit_${sale.id}_category`])}
                                                 value={sale.category || ''}
                                                 onChange={(e) => updateDynamicEntry('credit', sale.id, 'category', e.target.value)}
                                             >
@@ -1434,7 +1434,7 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 ))}
                                             </select>
                                         </div>
-                                        <div className="col-span-4 md:col-span-3">
+                                        <div className="col-span-6 md:col-span-4">
                                             <input 
                                                 type="number" 
                                                 inputMode="numeric"
@@ -1445,23 +1445,21 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 onChange={(e) => updateDynamicEntry('credit', sale.id, 'amount', e.target.value)}
                                             />
                                         </div>
-                                        <div className="col-span-2 md:col-span-2">
-                                            <button 
-                                                className="btn btn-danger w-full"
-                                                onClick={() => removeDynamicEntry('credit', sale.id)}
-                                            >
-                                                <i className="fas fa-times"></i>
-                                            </button>
-                                        </div>
                                     </div>
-                                    <div className="col-span-12">
+                                    <div className="flex gap-2 items-center">
                                         <input 
                                             type="text" 
-                                            className="input-field w-full" 
+                                            className="input-field flex-1" 
                                             placeholder="Remarks (optional)"
                                             value={sale.remarks || ''}
                                             onChange={(e) => updateDynamicEntry('credit', sale.id, 'remarks', e.target.value)}
                                         />
+                                        <button 
+                                            className="btn btn-danger px-3 py-2"
+                                            onClick={() => removeDynamicEntry('credit', sale.id)}
+                                        >
+                                            <i className="fas fa-times"></i>
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -1511,7 +1509,7 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 ))}
                                             </select>
                                         </div>
-                                        <div className="col-span-6 md:col-span-2">
+                                        <div className="col-span-6 md:col-span-3">
                                             <input 
                                                 type="number" 
                                                 inputMode="decimal"
@@ -1522,7 +1520,7 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 onChange={(e) => updateDynamicEntry('lube', lube.id, 'quantity', e.target.value)}
                                             />
                                         </div>
-                                        <div className="col-span-6 md:col-span-2">
+                                        <div className="col-span-6 md:col-span-3">
                                             <input 
                                                 type="number" 
                                                 inputMode="numeric"
@@ -1533,23 +1531,21 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 onChange={(e) => updateDynamicEntry('lube', lube.id, 'amount', e.target.value)}
                                             />
                                         </div>
-                                        <div className="col-span-12 md:col-span-2">
-                                            <button 
-                                                className="btn btn-danger w-full"
-                                                onClick={() => removeDynamicEntry('lube', lube.id)}
-                                            >
-                                                <i className="fas fa-times"></i>
-                                            </button>
-                                        </div>
                                     </div>
-                                    <div className="col-span-12">
+                                    <div className="flex gap-2 items-center">
                                         <input 
                                             type="text" 
-                                            className="input-field w-full" 
+                                            className="input-field flex-1" 
                                             placeholder="Remarks (optional)"
                                             value={lube.remarks || ''}
                                             onChange={(e) => updateDynamicEntry('lube', lube.id, 'remarks', e.target.value)}
                                         />
+                                        <button 
+                                            className="btn btn-danger px-3 py-2"
+                                            onClick={() => removeDynamicEntry('lube', lube.id)}
+                                        >
+                                            <i className="fas fa-times"></i>
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -1578,7 +1574,7 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 className="input-field bg-white"
                                             />
                                         </div>
-                                        <div className="col-span-12 md:col-span-3">
+                                        <div className="col-span-12 md:col-span-4">
                                             <select 
                                                 className="input-field bg-white"
                                                 value={collection.category}
@@ -1593,7 +1589,7 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 ))}
                                             </select>
                                         </div>
-                                        <div className="col-span-8 md:col-span-3">
+                                        <div className="col-span-12 md:col-span-4">
                                             <input 
                                                 type="number" 
                                                 inputMode="numeric"
@@ -1604,23 +1600,21 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 onChange={(e) => updateDynamicEntry('cash', collection.id, 'amount', e.target.value)}
                                             />
                                         </div>
-                                        <div className="col-span-4 md:col-span-2">
-                                            <button 
-                                                className="btn btn-danger w-full"
-                                                onClick={() => removeDynamicEntry('cash', collection.id)}
-                                            >
-                                                <i className="fas fa-times"></i>
-                                            </button>
-                                        </div>
                                     </div>
-                                    <div className="col-span-12">
+                                    <div className="flex gap-2 items-center">
                                         <input 
                                             type="text" 
-                                            className="input-field w-full" 
+                                            className="input-field flex-1" 
                                             placeholder="Remarks (optional)"
                                             value={collection.remarks || ''}
                                             onChange={(e) => updateDynamicEntry('cash', collection.id, 'remarks', e.target.value)}
                                         />
+                                        <button 
+                                            className="btn btn-danger px-3 py-2"
+                                            onClick={() => removeDynamicEntry('cash', collection.id)}
+                                        >
+                                            <i className="fas fa-times"></i>
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -1649,7 +1643,7 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 className="input-field bg-white"
                                             />
                                         </div>
-                                        <div className="col-span-12 md:col-span-3">
+                                        <div className="col-span-12 md:col-span-4">
                                             <select 
                                                 className="input-field bg-white"
                                                 value={expense.category}
@@ -1664,7 +1658,7 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 ))}
                                             </select>
                                         </div>
-                                        <div className="col-span-8 md:col-span-3">
+                                        <div className="col-span-12 md:col-span-4">
                                             <input 
                                                 type="number" 
                                                 inputMode="numeric"
@@ -1675,23 +1669,21 @@ const ShiftEntryContent = ({ showSuccessBanner, editMode = false, initialShiftDa
                                                 onChange={(e) => updateDynamicEntry('expense', expense.id, 'amount', e.target.value)}
                                             />
                                         </div>
-                                        <div className="col-span-4 md:col-span-2">
-                                            <button 
-                                                className="btn btn-danger w-full"
-                                                onClick={() => removeDynamicEntry('expense', expense.id)}
-                                            >
-                                                <i className="fas fa-times"></i>
-                                            </button>
-                                        </div>
                                     </div>
-                                    <div className="col-span-12">
+                                    <div className="flex gap-2 items-center">
                                         <input 
                                             type="text" 
-                                            className="input-field w-full" 
+                                            className="input-field flex-1" 
                                             placeholder="Remarks (optional)"
                                             value={expense.remarks || ''}
                                             onChange={(e) => updateDynamicEntry('expense', expense.id, 'remarks', e.target.value)}
                                         />
+                                        <button 
+                                            className="btn btn-danger px-3 py-2"
+                                            onClick={() => removeDynamicEntry('expense', expense.id)}
+                                        >
+                                            <i className="fas fa-times"></i>
+                                        </button>
                                     </div>
                                 </div>
                             ))}
